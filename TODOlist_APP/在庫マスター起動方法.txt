@@ -1,0 +1,22 @@
+フォルダのパス
+C:\Users\MMSUSER\Documents\11_苫小牧公営住宅\90_個人フォルダ\11_武田\APP\python-3.13.5-embed-amd64
+
+cd C:\Users\MMSUSER\Documents\11_苫小牧公営住宅\90_個人フォルダ\11_武田\APP\在庫マスターAPP
+
+\python.exe" -m http.server 8002
+
+"C:\Users\MMSUSER\Documents\11_苫小牧公営住宅\90_個人フォルダ\11_武田\APP\python-3.13.5-embed-amd64\python.exe" -m http.server 8002
+
+C:\Users\MMSUSER\Documents\11_苫小牧公営住宅\90_個人フォルダ\11_武田\APP\在庫マスターAPP\在庫マスター_β1.0.html
+
+
+------------------------------------
+起動方法
+
+cmd
+
+cd C:\Users\MMSUSER\Documents\11_苫小牧公営住宅\90_個人フォルダ\11_武田\APP\在庫マスターAPP
+
+"C:\Users\MMSUSER\Documents\11_苫小牧公営住宅\90_個人フォルダ\11_武田\APP\python-3.13.5-embed-amd64\python.exe" -m http.server 8002
+
+http://localhost:8002/在庫マスター_β1.0.html

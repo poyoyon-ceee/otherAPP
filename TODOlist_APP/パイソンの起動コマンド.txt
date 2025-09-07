@@ -1,0 +1,29 @@
+●コマンドプロンプトにて
+
+python -m http.server 8001
+
+●バッチファイルの事
+
+4. start_inventory_app.bat (任意、自動起動用)
+このバッチファイルは、これまでのアプリと異なるポートを使用し、アプリの起動URLも変更します。
+ANSIエンコーディングで保存してください。
+Generated batch
+@echo off
+REM Portable Pythonのパスをここに設定してください
+REM 例: SET PYTHON_DIR=C:\Users\falco\Documents\python-3.13.5-embed-amd64
+SET PYTHON_DIR=【ここにPortable Pythonを解凍したフォルダのパスを貼り付ける】
+
+REM アプリケーションフォルダに移動
+cd /d "%~dp0"
+
+REM Portable Pythonを使って簡易HTTPサーバーを新しいウィンドウで起動 (ポート8002)
+start /min cmd /k "%PYTHON_DIR%\python.exe" -m http.server 8002
+
+REM アプリケーションをChromeで自動的に開く (オプション)
+timeout /t 2 >nul
+start chrome http://localhost:8002/在庫マスター_β1.0.html
+
+exit
+Use code with caution.
+Batch
+SET PYTHON_DIR= の行は、あなたのPCのPortable Pythonの実際のパスに書き換えるのを忘れないでください。

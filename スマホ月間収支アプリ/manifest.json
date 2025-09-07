@@ -1,0 +1,27 @@
+{
+  "name": "月間収支管理アプリ",
+  "short_name": "収支管理",
+  "description": "テンプレート機能付きの月間収支管理アプリ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#3b82f6",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icon-512x512.png", 
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["finance", "productivity"],
+  "lang": "ja",
+  "dir": "ltr"
+}

@@ -1,0 +1,23 @@
+変更が必要な箇所:
+
+  1. ポート番号:
+    - 8002 → 任意のポート番号
+  2. HTMLファイル名:
+    - cool_todo_list.html → 任意のHTMLファイル名
+  3. Service Workerのキャッシュ名パターン (必要に応じて):
+    - todo-list-v → アプリに応じたプレフィックス
+
+  汎用化のポイント:
+
+  - バージョン抽出ロジックは findstr /C:"todo-list-v"
+  の部分で、キャッシュ名のパターンを検索しています
+  - PowerShellでの置換処理も同様のパターンに基づいています
+  - その他の処理（Pythonサーバー起動、ブラウザ起動など）は完全に汎用的です       
+
+  例えば、ポート8001でindex.htmlを使うアプリなら：
+  - 8002 → 8001
+  - cool_todo_list.html → index.html
+  - 必要に応じて todo-list-v → app-v など
+
+  このように変更すれば、どのWebアプリでもService
+  Workerのバージョン自動更新機能付きで使用できます。

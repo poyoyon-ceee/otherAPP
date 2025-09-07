@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>収支管理アプリ</title>
+    
+    <!-- PWA用メタタグ -->
+    <meta name="description" content="テンプレート機能付きの月間収支管理アプリ">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="収支管理">
+    
+    <!-- マニフェスト -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- アイコン -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192x192.png">
+    <link rel="apple-touch-icon" href="/icon-192x192.png">
+    
+    <!-- スクリプト -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #3b82f6;
+        }
+        
+        /* PWAインストールボタンのスタイル */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10b981;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .install-prompt:hover {
+            background: #059669;
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        }
+        
+        .install-prompt.hidden {
+            display: none;
+        }
+        
+        /* オフライン状態の表示 */
+        .offline-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #ef4444;
+            color: white;
+            text-align: center;
+            padding: 8px;
+            font-size: 14px;
+            z-index: 1001;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .offline-indicator.show {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <!-- PWAインストールプロンプト -->
+    <button id="installButton" class="install-prompt hidden">
+        📱 アプリをインストール
+    </button>
+    
+    <!-- オフライン状態インジケーター -->
+    <div id="offlineIndicator" class="offline-indicator">
+        🔌 オフライン状態です
+    </div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Lucide icons as components
+        const Plus = () => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 5v14M5 12h14"/>
+            </svg>
+        );
+
+        const ArrowLeft = () => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m12 19-7-7 7-7M19 12H5"/>
+            </svg>
+        );
+
+        const ArrowRight = () => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m12 19 7-7-7-7M5 12h14"/>
+            </svg>
+        );
+
+        const RefreshCw = () => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                <path d="M21 3v5h-5"/>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                <path d="M3 21v-5h5"/>
+            </svg>
+        );
+
+        const Edit = ({ size = 14 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+        );
+
+        const Trash2 = ({ size = 14 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                <line x1="10" y1="11" x2="10" y2="17"/>
+                <line x1="14" y1="11" x2="14" y2="17"/>
+            </svg>
+        );
+
+        const Save = ({ size = 18 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17,21 17,13 7,13 7,21"/>
+                <polyline points="7,3 7,8 15,8"/>
+            </svg>
+        );
+
+        const Upload = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17,10 12,5 7,10"/>
+                <line x1="12" y1="5" x2="12" y2="15"/>
+            </svg>
+        );
+
+        const Download = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17,10 12,15 7,10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+        );
+
+        const X = ({ size = 18 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6 6 18"/>
+                <path d="m6 6 12 12"/>
+            </svg>
+        );
+
+        const ExpenseTrackerApp = () => {
+            const [currentDate, setCurrentDate] = useState(new Date());
+            const [activeTab, setActiveTab] = useState('list');
+            const [showAddForm, setShowAddForm] = useState(false);
+            const [showTemplateForm, setShowTemplateForm] = useState(false);
+            const [editingTransaction, setEditingTransaction] = useState(null);
+            const [editingTemplate, setEditingTemplate] = useState(null);
+            
+            const [draggedTemplate, setDraggedTemplate] = useState(null);
+            const [dragOverIndex, setDragOverIndex] = useState(null);
+            
+            const [isDataInitialized, setIsDataInitialized] = useState(false);
+            const dataLoadedRef = useRef(false);
+            
+            const [manualTransactions, setManualTransactions] = useState([]);
+            const [generatedTransactions, setGeneratedTransactions] = useState([]);
+            const [templates, setTemplates] = useState([
+                { id: 1, name: '給与', amount: 150000, type: 'income', day: 28, weekendRule: 'before', frequency: 'monthly', bimonthlyRule: 'odd' },
+                { id: 2, name: '家賃', amount: -30000, type: 'expense', day: 28, weekendRule: 'after', frequency: 'monthly', bimonthlyRule: 'odd' }
+            ]);
+            const [monthlyBalances, setMonthlyBalances] = useState({});
+            
+            const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+            const [deleteTarget, setDeleteTarget] = useState(null);
+            
+            const [showResetConfirm, setShowResetConfirm] = useState(false);
+            const [resetStep, setResetStep] = useState(1);
+
+            const [newTransaction, setNewTransaction] = useState({
+                name: '',
+                amount: '',
+                type: 'expense',
+                date: new Date().toISOString().split('T')[0]
+            });
+
+            const [newTemplate, setNewTemplate] = useState({
+                name: '',
+                amount: '',
+                type: 'expense',
+                day: 1,
+                weekendRule: 'after',
+                frequency: 'monthly',
+                bimonthlyRule: 'odd'
+            });
+
+            const handleDragStart = (e, template, index) => {
+                setDraggedTemplate({ template, index });
+                e.dataTransfer.effectAllowed = 'move';
+            };
+
+            const handleDragOver = (e, index) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                setDragOverIndex(index);
+            };
+
+            const handleDragLeave = () => {
+                setDragOverIndex(null);
+            };
+
+            const handleDrop = (e, dropIndex) => {
+                e.preventDefault();
+                setDragOverIndex(null);
+                
+                if (!draggedTemplate || draggedTemplate.index === dropIndex) {
+                    setDraggedTemplate(null);
+                    return;
+                }
+
+                const newTemplates = [...templates];
+                const draggedItem = newTemplates[draggedTemplate.index];
+                
+                newTemplates.splice(draggedTemplate.index, 1);
+                newTemplates.splice(dropIndex, 0, draggedItem);
+                
+                setTemplates(newTemplates);
+                setDraggedTemplate(null);
+            };
+
+            const formatDateToString = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            useEffect(() => {
+                if (dataLoadedRef.current) return;
+                
+                const savedManualTransactions = localStorage.getItem('expenseTracker-manualTransactions');
+                const savedGeneratedTransactions = localStorage.getItem('expenseTracker-generatedTransactions');
+                const savedTemplates = localStorage.getItem('expenseTracker-templates');
+                const savedBalances = localStorage.getItem('expenseTracker-balances');
+
+                if (savedManualTransactions) {
+                    setManualTransactions(JSON.parse(savedManualTransactions));
+                }
+                if (savedGeneratedTransactions) {
+                    setGeneratedTransactions(JSON.parse(savedGeneratedTransactions));
+                }
+                if (savedTemplates) {
+                    const loadedTemplates = JSON.parse(savedTemplates).map(t => ({
+                        ...t,
+                        frequency: t.frequency || 'monthly',
+                        bimonthlyRule: t.bimonthlyRule || 'odd'
+                    }));
+                    setTemplates(loadedTemplates);
+                }
+                if (savedBalances) {
+                    setMonthlyBalances(JSON.parse(savedBalances));
+                }
+                
+                dataLoadedRef.current = true;
+                setIsDataInitialized(true);
+            }, []);
+
+            useEffect(() => {
+                if (!isDataInitialized) return;
+                localStorage.setItem('expenseTracker-manualTransactions', JSON.stringify(manualTransactions));
+            }, [manualTransactions, isDataInitialized]);
+
+            useEffect(() => {
+                if (!isDataInitialized) return;
+                localStorage.setItem('expenseTracker-generatedTransactions', JSON.stringify(generatedTransactions));
+            }, [generatedTransactions, isDataInitialized]);
+
+            useEffect(() => {
+                if (!isDataInitialized) return;
+                localStorage.setItem('expenseTracker-templates', JSON.stringify(templates));
+            }, [templates, isDataInitialized]);
+
+            useEffect(() => {
+                if (!isDataInitialized) return;
+                localStorage.setItem('expenseTracker-balances', JSON.stringify(monthlyBalances));
+            }, [monthlyBalances, isDataInitialized]);
+
+            const getMonthKey = (year, month) => `${year}-${month}`;
+
+            const getPreviousMonthBalance = (year, month) => {
+                const prevMonth = month === 0 ? 11 : month - 1;
+                const prevYear = month === 0 ? year - 1 : year;
+                const monthKey = getMonthKey(prevYear, prevMonth);
+                return monthlyBalances[monthKey] || 0;
+            };
+
+            const adjustForWeekend = (date, rule) => {
+                const newDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                const dayOfWeek = newDate.getDay();
+                if (dayOfWeek === 0 || dayOfWeek === 6) {
+                    if (rule === 'before') {
+                        const daysToSubtract = dayOfWeek === 0 ? 2 : 1;
+                        newDate.setDate(newDate.getDate() - daysToSubtract);
+                    } else if (rule === 'after') {
+                        const daysToAdd = dayOfWeek === 0 ? 1 : 2;
+                        newDate.setDate(newDate.getDate() + daysToAdd);
+                    }
+                }
+                return newDate;
+            };
+
+            const generateTransactionsFromTemplates = (year, month) => {
+                const monthKey = getMonthKey(year, month);
+                const displayMonth = month + 1;
+                
+                const existingGenerated = generatedTransactions.filter(t => {
+                    if (!t.date) return false;
+                    const transactionDate = new Date(t.date);
+                    return transactionDate.getFullYear() === year && 
+                           transactionDate.getMonth() === month;
+                });
+
+                if (existingGenerated.length > 0) return;
+
+                const newGeneratedTransactions = templates.flatMap(template => {
+                    if (template.frequency === 'bimonthly') {
+                        const isOddMonth = displayMonth % 2 !== 0;
+                        if (template.bimonthlyRule === 'odd' && !isOddMonth) {
+                            return [];
+                        }
+                        if (template.bimonthlyRule === 'even' && isOddMonth) {
+                            return [];
+                        }
+                    }
+
+                    const date = new Date(year, month, template.day);
+                    const adjustedDate = adjustForWeekend(date, template.weekendRule);
+                    
+                    return [{
+                        id: `generated-${template.id}-${year}-${month}-${Date.now()}`,
+                        name: template.name,
+                        amount: template.amount,
+                        type: template.amount >= 0 ? 'income' : 'expense',
+                        date: formatDateToString(adjustedDate),
+                        isGenerated: true,
+                        originalTemplateId: template.id
+                    }];
+                });
+
+                setGeneratedTransactions(prev => [...prev, ...newGeneratedTransactions]);
+            };
+
+            useEffect(() => {
+                if (!isDataInitialized) return;
+                
+                const now = new Date();
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth();
+                const displayYear = currentDate.getFullYear();
+                const displayMonth = currentDate.getMonth();
+                
+                if (currentYear === displayYear && currentMonth === displayMonth) {
+                    const existingGenerated = generatedTransactions.filter(t => {
+                        if (!t.date) return false;
+                        const transactionDate = new Date(t.date);
+                        return transactionDate.getFullYear() === currentYear && 
+                               transactionDate.getMonth() === currentMonth;
+                    });
+                    
+                    if (existingGenerated.length === 0 && templates.length > 0) {
+                        generateTransactionsFromTemplates(displayYear, displayMonth);
+                    }
+                }
+            }, [isDataInitialized]);
+
+            useEffect(() => {
+                if (!isDataInitialized) return;
+                
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                const monthKey = getMonthKey(year, month);
+                
+                const currentMonthGenerated = generatedTransactions.filter(t => {
+                    if (!t.date) return false;
+                    const transactionDate = new Date(t.date);
+                    return transactionDate.getFullYear() === year && 
+                           transactionDate.getMonth() === month;
+                });
+
+                const currentMonthManual = manualTransactions.filter(t => {
+                    if (!t.date) return false;
+                    const transactionDate = new Date(t.date);
+                    return transactionDate.getFullYear() === year && 
+                           transactionDate.getMonth() === month;
+                });
+
+                const allTransactions = [...currentMonthGenerated, ...currentMonthManual];
+                
+                const previousBalance = getPreviousMonthBalance(year, month);
+                const monthTotal = allTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+                const finalBalance = previousBalance + monthTotal;
+                
+                setMonthlyBalances(prev => ({
+                    ...prev,
+                    [monthKey]: finalBalance
+                }));
+            }, [manualTransactions, generatedTransactions, currentDate, isDataInitialized]);
+
+            const getCurrentMonthTransactions = () => {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                
+                const currentMonthGenerated = generatedTransactions.filter(t => {
+                    if (!t.date) return false;
+                    const transactionDate = new Date(t.date);
+                    return transactionDate.getFullYear() === year && 
+                           transactionDate.getMonth() === month;
+                });
+
+                const currentMonthManual = manualTransactions.filter(t => {
+                    if (!t.date) return false;
+                    const transactionDate = new Date(t.date);
+                    return transactionDate.getFullYear() === year && 
+                           transactionDate.getMonth() === month;
+                });
+
+                return [...currentMonthGenerated, ...currentMonthManual]
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+            };
+
+            const calculateBalance = (transactions, upToIndex) => {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                const previousBalance = getPreviousMonthBalance(year, month);
+                const currentSum = transactions.slice(0, upToIndex + 1)
+                    .reduce((sum, t) => sum + (t.amount || 0), 0);
+                return previousBalance + currentSum;
+            };
+
+            const changeMonth = (direction) => {
+                const newDate = new Date(currentDate);
+                newDate.setMonth(currentDate.getMonth() + direction);
+                setCurrentDate(newDate);
+            };
+
+            const addTransaction = () => {
+                if (!newTransaction.name || !newTransaction.amount) return;
+                
+                const transaction = {
+                    id: `manual-${Date.now()}`,
+                    name: newTransaction.name,
+                    amount: parseFloat(newTransaction.amount) * (newTransaction.type === 'expense' ? -1 : 1),
+                    type: newTransaction.type,
+                    date: newTransaction.date,
+                    isGenerated: false
+                };
+                
+                setManualTransactions([...manualTransactions, transaction]);
+                setNewTransaction({ 
+                    name: '', 
+                    amount: '', 
+                    type: 'expense', 
+                    date: new Date().toISOString().split('T')[0] 
+                });
+                setShowAddForm(false);
+            };
+
+            const startEditTransaction = (transaction) => {
+                setEditingTransaction({
+                    ...transaction,
+                    amount: Math.abs(transaction.amount).toString(),
+                    type: transaction.amount >= 0 ? 'income' : 'expense'
+                });
+            };
+
+            const saveTransactionEdit = () => {
+                if (!editingTransaction.name || !editingTransaction.amount) return;
+                
+                const updatedAmount = parseFloat(editingTransaction.amount) * (editingTransaction.type === 'expense' ? -1 : 1);
+                
+                const updatedTransaction = {
+                    ...editingTransaction,
+                    amount: updatedAmount,
+                    type: editingTransaction.type
+                };
+
+                if (editingTransaction.isGenerated) {
+                    setGeneratedTransactions(generatedTransactions.map(t => 
+                        t.id === editingTransaction.id ? updatedTransaction : t
+                    ));
+                } else {
+                    setManualTransactions(manualTransactions.map(t => 
+                        t.id === editingTransaction.id ? updatedTransaction : t
+                    ));
+                }
+                
+                setEditingTransaction(null);
+            };
+
+            const showDeleteDialog = (transaction) => {
+                setDeleteTarget(transaction);
+                setShowDeleteConfirm(true);
+            };
+
+            const confirmDelete = () => {
+                if (!deleteTarget) return;
+                
+                if (deleteTarget.isGenerated) {
+                    setGeneratedTransactions(generatedTransactions.filter(t => t.id !== deleteTarget.id));
+                } else {
+                    setManualTransactions(manualTransactions.filter(t => t.id !== deleteTarget.id));
+                }
+                
+                setDeleteTarget(null);
+                setShowDeleteConfirm(false);
+            };
+
+            const cancelDelete = () => {
+                setDeleteTarget(null);
+                setShowDeleteConfirm(false);
+            };
+
+            const deleteTemplateFromEdit = () => {
+                if (window.confirm('このテンプレートを削除しますか？')) {
+                    setTemplates(templates.filter(t => t.id !== editingTemplate.id));
+                    setEditingTemplate(null);
+                }
+            };
+
+            const deleteTransactionFromEdit = () => {
+                if (window.confirm('この取引を削除しますか？')) {
+                    if (editingTransaction.isGenerated) {
+                        setGeneratedTransactions(generatedTransactions.filter(t => t.id !== editingTransaction.id));
+                    } else {
+                        setManualTransactions(manualTransactions.filter(t => t.id !== editingTransaction.id));
+                    }
+                    setEditingTransaction(null);
+                }
+            };
+
+            const showResetDialog = () => {
+                setResetStep(1);
+                setShowResetConfirm(true);
+            };
+
+            const proceedToFinalConfirm = () => {
+                setResetStep(2);
+            };
+
+            const executeReset = () => {
+                setManualTransactions([]);
+                setGeneratedTransactions([]);
+                setMonthlyBalances({});
+                
+                setShowResetConfirm(false);
+                setResetStep(1);
+                
+                alert('収支データをすべてリセットしました');
+            };
+
+            const cancelReset = () => {
+                setShowResetConfirm(false);
+                setResetStep(1);
+            };
+
+            const addTemplate = () => {
+                if (!newTemplate.name || !newTemplate.amount) return;
+                
+                const template = {
+                    id: Date.now(),
+                    name: newTemplate.name,
+                    amount: parseFloat(newTemplate.amount) * (newTemplate.type === 'expense' ? -1 : 1),
+                    type: newTemplate.type,
+                    day: parseInt(newTemplate.day),
+                    weekendRule: newTemplate.weekendRule,
+                    frequency: newTemplate.frequency,
+                    bimonthlyRule: newTemplate.bimonthlyRule,
+                };
+                
+                setTemplates([...templates, template]);
+                setNewTemplate({ name: '', amount: '', type: 'expense', day: 1, weekendRule: 'after', frequency: 'monthly', bimonthlyRule: 'odd' });
+                setShowTemplateForm(false);
+            };
+
+            const startEditTemplate = (template) => {
+                setEditingTemplate({
+                    ...template,
+                    amount: Math.abs(template.amount).toString(),
+                    type: template.amount >= 0 ? 'income' : 'expense'
+                });
+            };
+
+            const saveTemplateEdit = () => {
+                if (!editingTemplate.name || !editingTemplate.amount) return;
+                
+                const updatedTemplate = {
+                    ...editingTemplate,
+                    amount: parseFloat(editingTemplate.amount) * (editingTemplate.type === 'expense' ? -1 : 1),
+                    day: parseInt(editingTemplate.day)
+                };
+                
+                setTemplates(templates.map(t => t.id === editingTemplate.id ? updatedTemplate : t));
+                setEditingTemplate(null);
+            };
+
+            const updateMonthlyTransactions = () => {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                
+                if (window.confirm(`${year}年${month + 1}月のテンプレート由来の取引を再生成しますか？`)) {
+                    setGeneratedTransactions(prev => prev.filter(t => {
+                        if (!t.date) return true;
+                        const transactionDate = new Date(t.date);
+                        return !(transactionDate.getFullYear() === year && 
+                                transactionDate.getMonth() === month);
+                    }));
+
+                    setTimeout(() => {
+                        generateTransactionsFromTemplates(year, month);
+                    }, 100);
+
+                    alert('現在の月の取引を更新しました');
+                }
+            };
+
+            const exportData = () => {
+                const data = {
+                    manualTransactions,
+                    generatedTransactions,
+                    templates,
+                    monthlyBalances,
+                    exportDate: new Date().toISOString(),
+                    version: '1.1'
+                };
+
+                const jsonString = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `家計簿データ_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            const importData = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        
+                        if (window.confirm('データを読み込みますか？現在のデータは上書きされます。')) {
+                            if (data.manualTransactions) setManualTransactions(data.manualTransactions);
+                            if (data.generatedTransactions) setGeneratedTransactions(data.generatedTransactions);
+                            if (data.templates) {
+                                const loadedTemplates = data.templates.map(t => ({
+                                    ...t,
+                                    frequency: t.frequency || 'monthly',
+                                    bimonthlyRule: t.bimonthlyRule || 'odd'
+                                }));
+                                setTemplates(loadedTemplates);
+                            }
+                            if (data.monthlyBalances) setMonthlyBalances(data.monthlyBalances);
+                            
+                            alert('データを読み込みました');
+                        }
+                    } catch (error) {
+                        alert('ファイルの読み込みに失敗しました');
+                    }
+                };
+                reader.readAsText(file);
+                event.target.value = '';
+            };
+
+            if (!isDataInitialized) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-blue-400 to-blue-600 text-white flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+                            <div>データを読み込んでいます...</div>
+                        </div>
+                    </div>
+                );
+            }
+
+            const currentTransactions = getCurrentMonthTransactions();
+            const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+            const previousBalance = getPreviousMonthBalance(currentDate.getFullYear(), currentDate.getMonth());
+            
+            const isTemplateMode = activeTab === 'template';
+            const theme = {
+                bgGradient: isTemplateMode ? 'from-orange-400 to-orange-600' : 'from-blue-400 to-blue-600',
+                headerBg: isTemplateMode ? 'bg-orange-500' : 'bg-blue-500',
+                buttonBg: isTemplateMode ? 'bg-orange-600' : 'bg-blue-600',
+                buttonHoverBg: isTemplateMode ? 'hover:bg-orange-700' : 'hover:bg-blue-700',
+                tabText: isTemplateMode ? 'text-orange-600' : 'text-blue-600',
+                accentText: isTemplateMode ? 'text-orange-200' : 'text-red-200',
+            };
+
+            return (
+                <div className={`min-h-screen bg-gradient-to-br ${theme.bgGradient} text-white flex justify-center`}>
+                    <div className="w-full max-w-[1200px]">
+                    {/* ヘッダー */}
+                    <div className={`${theme.headerBg} p-3`}>
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                                <button 
+                                    onClick={() => changeMonth(-1)}
+                                    className={`p-2 ${theme.buttonBg} ${theme.buttonHoverBg} rounded-lg min-w-[40px] min-h-[40px] flex items-center justify-center`}
+                                >
+                                    <ArrowLeft />
+                                </button>
+                                <span className="font-semibold text-lg">
+                                    {currentDate.getFullYear()}年{monthNames[currentDate.getMonth()]}
+                                </span>
+                                <button 
+                                    onClick={() => changeMonth(1)}
+                                    className={`p-2 ${theme.buttonBg} ${theme.buttonHoverBg} rounded-lg min-w-[40px] min-h-[40px] flex items-center justify-center`}
+                                >
+                                    <ArrowRight />
+                                </button>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={exportData}
+                                    className="p-2 bg-green-600 rounded-lg hover:bg-green-700 min-w-[40px] min-h-[40px] flex items-center justify-center"
+                                    title="データ保存"
+                                >
+                                    <Download />
+                                </button>
+                                <label className="p-2 bg-purple-600 rounded-lg hover:bg-purple-700 min-w-[40px] min-h-[40px] flex items-center justify-center cursor-pointer" title="データ読込">
+                                    <Upload />
+                                    <input 
+                                        type="file" 
+                                        accept=".json" 
+                                        onChange={importData} 
+                                        style={{ display: 'none' }}
+                                    />
+                                </label>
+                                <button 
+                                    onClick={updateMonthlyTransactions}
+                                    className={`p-2 ${theme.buttonBg} ${theme.buttonHoverBg} rounded-lg min-w-[40px] min-h-[40px] flex items-center justify-center`}
+                                    title="現在の月のテンプレート再適用"
+                                >
+                                    <RefreshCw />
+                                </button>
+                                <button 
+                                    onClick={() => setShowAddForm(true)}
+                                    className={`p-2 ${theme.buttonBg} ${theme.buttonHoverBg} rounded-lg min-w-[40px] min-h-[40px] flex items-center justify-center`}
+                                >
+                                    <Plus />
+                                </button>
+                            </div>
+                        </div>
+
+                        {previousBalance !== 0 && (
+                            <div className={`${isTemplateMode ? 'bg-orange-600/50' : 'bg-blue-600/50'} rounded-lg px-3 py-1 text-center text-sm`}>
+                                前月繰越: {previousBalance.toLocaleString()}円
+                            </div>
+                        )}
+                    </div>
+
+                    {/* タブナビゲーション */}
+                    <div className={`flex ${theme.headerBg}`}>
+                        <button 
+                            onClick={() => setActiveTab('list')}
+                            className={`flex-1 p-2 text-center font-medium ${
+                                activeTab === 'list' ? `bg-white ${theme.tabText}` : 'text-white'
+                            }`}
+                        >
+                            一覧
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('template')}
+                            className={`flex-1 p-2 text-center font-medium ${
+                                activeTab === 'template' ? `bg-white ${theme.tabText}` : 'text-white'
+                            }`}
+                        >
+                            テンプレート
+                        </button>
+                    </div>
+
+                    {/* メインコンテンツ */}
+                    <div className="p-2">
+                        {activeTab === 'list' && (
+                            <div className="space-y-2">
+                                <div className="grid grid-cols-12 gap-2 p-3 bg-white/20 rounded-lg font-semibold">
+                                    <div className="col-span-2 text-center">日付</div>
+                                    <div className="col-span-4">費目</div>
+                                    <div className="col-span-2 text-right">金額</div>
+                                    <div className="col-span-3 text-right">残高</div>
+                                    <div className="col-span-1 text-center">操作</div>
+                                </div>
+                                
+                                {currentTransactions.map((transaction, index) => {
+                                    const balance = calculateBalance(currentTransactions, index);
+                                    const date = new Date(transaction.date);
+                                    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+                                    const isEditing = editingTransaction && editingTransaction.id === transaction.id;
+                                    
+                                    if (isEditing) {
+                                        return (
+                                            <div key={transaction.id} className="grid grid-cols-1 gap-3 p-4 bg-white/20 rounded-lg">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <input 
+                                                        type="text"
+                                                        value={editingTransaction.name}
+                                                        onChange={(e) => setEditingTransaction({...editingTransaction, name: e.target.value})}
+                                                        className="p-3 rounded-lg text-black"
+                                                        placeholder="費目"
+                                                    />
+                                                    <input 
+                                                        type="number"
+                                                        value={editingTransaction.amount}
+                                                        onChange={(e) => setEditingTransaction({...editingTransaction, amount: e.target.value})}
+                                                        className="p-3 rounded-lg text-black"
+                                                        placeholder="金額"
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <select 
+                                                        value={editingTransaction.type}
+                                                        onChange={(e) => setEditingTransaction({...editingTransaction, type: e.target.value})}
+                                                        className="p-3 rounded-lg text-black"
+                                                    >
+                                                        <option value="expense">支出</option>
+                                                        <option value="income">収入</option>
+                                                    </select>
+                                                    <input 
+                                                        type="date"
+                                                        value={editingTransaction.date}
+                                                        onChange={(e) => setEditingTransaction({...editingTransaction, date: e.target.value})}
+                                                        className="p-3 rounded-lg text-black"
+                                                    />
+                                                </div>
+                                                <div className="flex gap-4 justify-center">
+                                                    <button 
+                                                        onClick={saveTransactionEdit}
+                                                        className="px-6 py-3 bg-green-500 rounded-lg hover:bg-green-600 min-w-[80px] flex items-center justify-center"
+                                                    >
+                                                        <Save />
+                                                    </button>
+                                                    <button 
+                                                        onClick={deleteTransactionFromEdit}
+                                                        className="px-6 py-3 bg-red-500 rounded-lg hover:bg-red-600 min-w-[80px] flex items-center justify-center"
+                                                    >
+                                                        <Trash2 />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => setEditingTransaction(null)}
+                                                        className="px-6 py-3 bg-gray-500 rounded-lg hover:bg-gray-600 min-w-[80px] flex items-center justify-center"
+                                                    >
+                                                        <X />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    
+                                    return (
+                                        <div key={transaction.id} className="grid grid-cols-12 gap-2 p-3 bg-white/10 rounded-lg min-h-[50px] items-center">
+                                            <div className="col-span-2 text-center text-sm">
+                                                {date.getMonth() + 1}/{date.getDate()} ({weekdays[date.getDay()]})
+                                            </div>
+                                            <div className="col-span-4 flex items-center gap-2">
+                                                <div 
+                                                    className={`w-3 h-3 rounded flex-shrink-0 ${
+                                                        transaction.amount >= 0 ? 'bg-green-400' : 'bg-red-400'
+                                                    }`}
+                                                />
+                                                <span className="truncate text-sm">{transaction.name}</span>
+                                                {transaction.isGenerated && <span className="text-xs opacity-60">(T)</span>}
+                                            </div>
+                                            <div className={`col-span-2 text-right text-sm ${
+                                                transaction.amount >= 0 ? 'text-green-200' : 'text-red-200'
+                                            }`}>
+                                                {transaction.amount.toLocaleString()}
+                                            </div>
+                                            <div className="col-span-3 text-right font-semibold text-sm">
+                                                {balance.toLocaleString()}
+                                            </div>
+                                            <div className="col-span-1 flex justify-center">
+                                                <button 
+                                                    onClick={() => startEditTransaction(transaction)}
+                                                    className="p-1 bg-yellow-500 rounded hover:bg-yellow-600 min-w-[32px] min-h-[32px] flex items-center justify-center"
+                                                >
+                                                    <Edit />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {activeTab === 'template' && (
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <h2 className="text-lg font-semibold">定期収支テンプレート</h2>
+                                    <button 
+                                        onClick={() => setShowTemplateForm(true)}
+                                        className="px-5 py-2 bg-green-500 rounded-lg hover:bg-green-600 font-medium min-h-[40px]"
+                                    >
+                                        追加
+                                    </button>
+                                </div>
+                                
+                                {templates && templates.length > 0 ? templates.map((template, index) => {
+                                    const isEditing = editingTemplate && editingTemplate.id === template.id;
+                                    
+                                    if (isEditing) {
+                                        return (
+                                            <div key={template.id} className="p-4 bg-white/20 rounded-lg space-y-4">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <input type="text" value={editingTemplate.name} onChange={(e) => setEditingTemplate({...editingTemplate, name: e.target.value})} className="p-3 rounded-lg text-black" placeholder="費目" />
+                                                    <input type="number" value={editingTemplate.amount} onChange={(e) => setEditingTemplate({...editingTemplate, amount: e.target.value})} className="p-3 rounded-lg text-black" placeholder="金額" />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <select value={editingTemplate.type} onChange={(e) => setEditingTemplate({...editingTemplate, type: e.target.value})} className="p-3 rounded-lg text-black">
+                                                        <option value="expense">支出</option>
+                                                        <option value="income">収入</option>
+                                                    </select>
+                                                    <input type="number" min="1" max="31" value={editingTemplate.day} onChange={(e) => setEditingTemplate({...editingTemplate, day: e.target.value})} className="p-3 rounded-lg text-black" placeholder="日" />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <select value={editingTemplate.frequency} onChange={(e) => setEditingTemplate({...editingTemplate, frequency: e.target.value})} className="p-3 rounded-lg text-black">
+                                                        <option value="monthly">毎月</option>
+                                                        <option value="bimonthly">2ヶ月に1回</option>
+                                                    </select>
+                                                    {editingTemplate.frequency === 'bimonthly' && (
+                                                        <select value={editingTemplate.bimonthlyRule} onChange={(e) => setEditingTemplate({...editingTemplate, bimonthlyRule: e.target.value})} className="p-3 rounded-lg text-black">
+                                                            <option value="odd">奇数月 (1,3,5...)</option>
+                                                            <option value="even">偶数月 (2,4,6...)</option>
+                                                        </select>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <select value={editingTemplate.weekendRule} onChange={(e) => setEditingTemplate({...editingTemplate, weekendRule: e.target.value})} className="p-3 rounded-lg text-black w-full">
+                                                        <option value="after">後倒し</option>
+                                                        <option value="before">前倒し</option>
+                                                        <option value="none">土日も実行</option>
+                                                    </select>
+                                                </div>
+                                                <div className="flex gap-4 justify-center">
+                                                    <button onClick={saveTemplateEdit} className="px-8 py-3 bg-green-500 rounded-lg hover:bg-green-600 font-medium min-h-[44px]">保存</button>
+                                                    <button onClick={deleteTemplateFromEdit} className="px-8 py-3 bg-red-500 rounded-lg hover:bg-red-600 font-medium min-h-[44px]">削除</button>
+                                                    <button onClick={() => setEditingTemplate(null)} className="px-8 py-3 bg-gray-500 rounded-lg hover:bg-gray-600 font-medium min-h-[44px]">キャンセル</button>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    
+                                    const frequencyText = template.frequency === 'bimonthly'
+                                        ? (template.bimonthlyRule === 'odd' ? '奇数月' : '偶数月')
+                                        : '毎月';
+
+                                    return (
+                                        <div 
+                                            key={template.id} 
+                                            className={`p-3 bg-white/10 rounded-lg cursor-move transition-all duration-200 ${
+                                                dragOverIndex === index ? 'border-2 border-yellow-400 bg-white/20' : ''
+                                            } ${
+                                                draggedTemplate?.index === index ? 'opacity-50 scale-95' : ''
+                                            }`}
+                                            draggable="true"
+                                            onDragStart={(e) => handleDragStart(e, template, index)}
+                                            onDragOver={(e) => handleDragOver(e, index)}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={(e) => handleDrop(e, index)}
+                                        >
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex-1">
+                                                    <span className="font-semibold">{template.name}</span>
+                                                    <span className="text-sm opacity-80 ml-2">
+                                                        {frequencyText}{template.day}日 
+                                                        ({template.weekendRule === 'before' ? '前倒し' : 
+                                                          template.weekendRule === 'after' ? '後倒し' : '土日も実行'})
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`font-bold ${
+                                                        template.amount >= 0 ? 'text-green-200' : theme.accentText
+                                                    }`}>
+                                                        {template.amount.toLocaleString()}円
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => startEditTemplate(template)}
+                                                        className="p-1 bg-yellow-500 rounded hover:bg-yellow-600 min-w-[32px] min-h-[32px] flex items-center justify-center"
+                                                    >
+                                                        <Edit size={14} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                }) : (
+                                    <div className="text-center py-8 text-white/60">
+                                        テンプレートがありません
+                                    </div>
+                                )}
+                                
+                                <div className="mt-8 pt-4 border-t border-white/20">
+                                    <button 
+                                        onClick={showResetDialog}
+                                        className="w-full py-3 bg-red-600 rounded-lg hover:bg-red-700 font-medium text-white"
+                                    >
+                                        収支データを全リセット
+                                    </button>
+                                    <p className="text-xs text-white/70 mt-2 text-center">
+                                        ※テンプレートは保持されます
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {showAddForm && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+                            <div className="bg-white text-black rounded-lg p-6 w-full max-w-md">
+                                <h3 className="text-lg font-semibold mb-4">取引を追加</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">費目</label>
+                                        <input type="text" value={newTransaction.name} onChange={(e) => setNewTransaction({...newTransaction, name: e.target.value})} className="w-full p-3 border rounded-xl text-base min-h-[48px]" placeholder="例: 食費" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">金額</label>
+                                        <input type="number" value={newTransaction.amount} onChange={(e) => setNewTransaction({...newTransaction, amount: e.target.value})} className="w-full p-3 border rounded-xl text-base min-h-[48px]" placeholder="1000" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">種別</label>
+                                        <select value={newTransaction.type} onChange={(e) => setNewTransaction({...newTransaction, type: e.target.value})} className="w-full p-3 border rounded-xl text-base min-h-[48px]">
+                                            <option value="expense">支出</option>
+                                            <option value="income">収入</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">日付</label>
+                                        <input type="date" value={newTransaction.date} onChange={(e) => setNewTransaction({...newTransaction, date: e.target.value})} className="w-full p-3 border rounded-xl text-base min-h-[48px]" />
+                                    </div>
+                                </div>
+                                <div className="flex gap-3 mt-6">
+                                    <button onClick={() => setShowAddForm(false)} className="flex-1 py-3 bg-gray-300 rounded-xl hover:bg-gray-400 font-medium text-base min-h-[48px]">キャンセル</button>
+                                    <button onClick={addTransaction} className="flex-1 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 font-medium text-base min-h-[48px]">追加</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showTemplateForm && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+                            <div className="bg-white text-black rounded-lg p-6 w-full max-w-md">
+                                <h3 className="text-lg font-semibold mb-4">テンプレートを追加</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">費目</label>
+                                        <input type="text" value={newTemplate.name} onChange={(e) => setNewTemplate({...newTemplate, name: e.target.value})} className="w-full p-3 border rounded-xl text-base min-h-[48px]" placeholder="例: 家賃" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">金額</label>
+                                        <input type="number" value={newTemplate.amount} onChange={(e) => setNewTemplate({...newTemplate, amount: e.target.value})} className="w-full p-3 border rounded-xl text-base min-h-[48px]" placeholder="30000" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">種別</label>
+                                        <select value={newTemplate.type} onChange={(e) => setNewTemplate({...newTemplate, type: e.target.value})} className="w-full p-3 border rounded-xl text-base min-h-[48px]">
+                                            <option value="expense">支出</option>
+                                            <option value="income">収入</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">実行日 (1-31)</label>
+                                        <input type="number" min="1" max="31" value={newTemplate.day} onChange={(e) => setNewTemplate({...newTemplate, day: e.target.value})} className="w-full p-3 border rounded-xl text-base min-h-[48px]" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">頻度</label>
+                                        <select value={newTemplate.frequency} onChange={(e) => setNewTemplate({...newTemplate, frequency: e.target.value})} className="w-full p-3 border rounded-xl text-base min-h-[48px]">
+                                            <option value="monthly">毎月</option>
+                                            <option value="bimonthly">2ヶ月に1回</option>
+                                        </select>
+                                    </div>
+                                    {newTemplate.frequency === 'bimonthly' && (
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">実行月</label>
+                                            <select value={newTemplate.bimonthlyRule} onChange={(e) => setNewTemplate({...newTemplate, bimonthlyRule: e.target.value})} className="w-full p-3 border rounded-xl text-base min-h-[48px]">
+                                                <option value="odd">奇数月 (1,3,5...)</option>
+                                                <option value="even">偶数月 (2,4,6...)</option>
+                                            </select>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">土日の処理</label>
+                                        <select value={newTemplate.weekendRule} onChange={(e) => setNewTemplate({...newTemplate, weekendRule: e.target.value})} className="w-full p-3 border rounded-xl text-base min-h-[48px]">
+                                            <option value="after">後倒し（翌営業日）</option>
+                                            <option value="before">前倒し（前営業日）</option>
+                                            <option value="none">土日も実行</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="flex gap-3 mt-6">
+                                    <button onClick={() => setShowTemplateForm(false)} className="flex-1 py-3 bg-gray-300 rounded-xl hover:bg-gray-400 font-medium text-base min-h-[48px]">キャンセル</button>
+                                    <button onClick={addTemplate} className="flex-1 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 font-medium text-base min-h-[48px]">追加</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showDeleteConfirm && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+                            <div className="bg-white text-black rounded-lg p-6 w-full max-w-sm">
+                                <h3 className="text-lg font-semibold mb-4">削除確認</h3>
+                                <p className="mb-6 text-gray-700">
+                                    {deleteTarget?.isGenerated 
+                                        ? 'このテンプレート由来の取引を削除しますか？（テンプレート自体は残ります）'
+                                        : 'この取引を削除しますか？'
+                                    }
+                                </p>
+                                <div className="flex gap-3">
+                                    <button onClick={cancelDelete} className="flex-1 py-3 bg-gray-300 rounded-xl hover:bg-gray-400 font-medium">キャンセル</button>
+                                    <button onClick={confirmDelete} className="flex-1 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 font-medium">削除</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showResetConfirm && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+                            <div className="bg-white text-black rounded-lg p-6 w-full max-w-sm">
+                                {resetStep === 1 ? (
+                                    <>
+                                        <h3 className="text-lg font-semibold mb-4 text-red-600">データリセット確認</h3>
+                                        <p className="mb-6 text-gray-700">
+                                            すべての収支データ（手動入力・テンプレート由来の取引・月次残高）を削除します。<br /><br />
+                                            <span className="font-semibold">この操作は取り消せません。</span><br />
+                                            テンプレート設定は保持されます。
+                                        </p>
+                                        <div className="flex gap-3">
+                                            <button onClick={cancelReset} className="flex-1 py-3 bg-gray-300 rounded-xl hover:bg-gray-400 font-medium">キャンセル</button>
+                                            <button onClick={proceedToFinalConfirm} className="flex-1 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 font-medium">続行</button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h3 className="text-lg font-semibold mb-4 text-red-600">最終確認</h3>
+                                        <p className="mb-6 text-gray-700 text-center">
+                                            <span className="font-bold text-red-600">本当にすべての収支データを削除しますか？</span>
+                                        </p>
+                                        <div className="flex gap-3">
+                                            <button onClick={cancelReset} className="flex-1 py-3 bg-gray-300 rounded-xl hover:bg-gray-400 font-medium">やめる</button>
+                                            <button onClick={executeReset} className="flex-1 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 font-medium">削除実行</button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+        };
+
+        ReactDOM.render(<ExpenseTrackerApp />, document.getElementById('root'));
+    </script>
+
+    <script>
+        // Service Workerの登録
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.register('/service-worker.js');
+                    console.log('Service Worker登録成功:', registration.scope);
+                    
+                    // 更新の確認
+                    registration.addEventListener('updatefound', () => {
+                        console.log('新しいService Workerが見つかりました');
+                    });
+                } catch (error) {
+                    console.log('Service Worker登録失敗:', error);
+                }
+            });
+        }
+
+        // PWAインストールプロンプト
+        let deferredPrompt;
+        const installButton = document.getElementById('installButton');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('PWAインストールプロンプトが表示可能です');
+            e.preventDefault();
+            deferredPrompt = e;
+            installButton.classList.remove('hidden');
+        });
+
+        installButton.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`PWAインストール結果: ${outcome}`);
+                if (outcome === 'accepted') {
+                    console.log('PWAがインストールされました');
+                } else {
+                    console.log('PWAインストールがキャンセルされました');
+                }
+                deferredPrompt = null;
+                installButton.classList.add('hidden');
+            }
+        });
+
+        window.addEventListener('appinstalled', (evt) => {
+            console.log('PWAがホーム画面に追加されました');
+            installButton.classList.add('hidden');
+        });
+
+        // オフライン/オンライン状態の管理
+        const offlineIndicator = document.getElementById('offlineIndicator');
+
+        function updateOnlineStatus() {
+            if (navigator.onLine) {
+                offlineIndicator.classList.remove('show');
+                console.log('オンラインになりました');
+            } else {
+                offlineIndicator.classList.add('show');
+                console.log('オフラインになりました');
+            }
+        }
+
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+
+        // 初期状態の確認
+        updateOnlineStatus();
+
+        // ページロード完了時の処理
+        window.addEventListener('load', () => {
+            console.log('PWA対応月間収支管理アプリが読み込まれました');
+        });
+
+        // ページを閉じる前の確認（データ保存の促進）
+        window.addEventListener('beforeunload', (e) => {
+            // 未保存のデータがある場合の警告
+            // この例では特に処理は行いませんが、必要に応じて実装
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA自動生成ツール</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'BIZ UDPゴシック', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', 'Meiryo UI', sans-serif;
+            background-color: #f5f5f5;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .input-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .file-input-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            background-color: #fafafa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-input-area:hover {
+            border-color: #2196F3;
+            background-color: #f0f8ff;
+        }
+
+        .file-input-area.dragover {
+            border-color: #2196F3;
+            background-color: #e3f2fd;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .html-textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            display: none;
+        }
+
+        .port-input {
+            width: 200px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .generate-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .output-section {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: none;
+        }
+
+        .tab-container {
+            display: flex;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .tab-button {
+            padding: 15px 25px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            color: #666;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-button.active {
+            color: #2196F3;
+            border-bottom-color: #2196F3;
+            background-color: white;
+        }
+
+        .tab-content {
+            padding: 30px;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .code-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .code-area {
+            width: 100%;
+            min-height: 300px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            resize: vertical;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .action-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .copy-btn:hover {
+            background-color: #138496;
+        }
+
+        .download-btn {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .download-btn:hover {
+            background-color: #218838;
+        }
+
+        .usage-content {
+            line-height: 1.8;
+        }
+
+        .usage-content h3 {
+            color: #333;
+            margin: 20px 0 10px 0;
+            font-size: 18px;
+        }
+
+        .usage-content pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .usage-content ol {
+            margin-left: 20px;
+        }
+
+        .usage-content li {
+            margin-bottom: 10px;
+        }
+
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #f5c6cb;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #c3e6cb;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .tab-container {
+                flex-wrap: wrap;
+            }
+            
+            .tab-button {
+                flex: 1;
+                min-width: 120px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>PWA自動生成ツール</h1>
+            <p>WebアプリのHTMLファイルから、PWA化に必要なファイルを自動生成します</p>
+        </div>
+
+        <div class="input-section">
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+
+            <div class="input-group">
+                <label for="htmlFile">HTMLファイル</label>
+                <div class="file-input-area" id="fileInputArea">
+                    <input type="file" id="htmlFile" class="file-input" accept=".html,.htm">
+                    <p>📁 HTMLファイルをドラッグ&ドロップするか、クリックして選択してください</p>
+                    <p style="font-size: 14px; color: #666; margin-top: 10px;">対応形式: .html, .htm (最大10MB)</p>
+                </div>
+                <textarea id="htmlTextarea" class="html-textarea" placeholder="または、HTMLコードを直接入力してください..."></textarea>
+                <button type="button" id="toggleInput" style="margin-top: 10px; padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">テキスト入力に切り替え</button>
+            </div>
+
+            <div class="input-group">
+                <label for="portNumber">ポート番号</label>
+                <input type="number" id="portNumber" class="port-input" value="8002" min="1024" max="65535">
+                <small style="color: #666; margin-left: 10px;">開発サーバー用のポート番号を指定してください</small>
+            </div>
+
+            <div class="input-group">
+                <button id="generateBtn" class="generate-btn">PWAファイルを生成</button>
+            </div>
+        </div>
+
+        <div class="output-section" id="outputSection">
+            <div class="tab-container">
+                <button class="tab-button active" data-tab="manifest">manifest.json</button>
+                <button class="tab-button" data-tab="serviceworker">service-worker.js</button>
+                <button class="tab-button" data-tab="startserver">start-server.bat</button>
+                <button class="tab-button" data-tab="usage">使用方法</button>
+            </div>
+
+            <div id="manifest" class="tab-content active">
+                <div class="code-container">
+                    <textarea id="manifestCode" class="code-area" readonly></textarea>
+                    <div class="button-group">
+                        <button class="action-btn copy-btn" data-target="manifestCode">📋 コピー</button>
+                        <button class="action-btn download-btn" data-filename="manifest.json" data-target="manifestCode">💾 ダウンロード</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="serviceworker" class="tab-content">
+                <div class="code-container">
+                    <textarea id="serviceworkerCode" class="code-area" readonly></textarea>
+                    <div class="button-group">
+                        <button class="action-btn copy-btn" data-target="serviceworkerCode">📋 コピー</button>
+                        <button class="action-btn download-btn" data-filename="service-worker.js" data-target="serviceworkerCode">💾 ダウンロード</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="startserver" class="tab-content">
+                <div class="code-container">
+                    <textarea id="startserverCode" class="code-area" readonly></textarea>
+                    <div class="button-group">
+                        <button class="action-btn copy-btn" data-target="startserverCode">📋 コピー</button>
+                        <button class="action-btn download-btn" data-filename="start-server.bat" data-target="startserverCode">💾 ダウンロード</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="usage" class="tab-content">
+                <div class="usage-content">
+                    <h3>📋 使用手順</h3>
+                    <ol>
+                        <li><strong>アイコンを準備</strong>
+                            <pre>icons/フォルダに以下を配置：
+- icon192.png (192×192px)
+- icon512.png (512×512px)</pre>
+                        </li>
+                        <li><strong>Python環境を準備</strong>
+                            <pre>同フォルダにpython-portableを配置</pre>
+                        </li>
+                        <li><strong>ファイルを配置</strong>
+                            <pre>project-folder/
+├── index.html (あなたのWebアプリ)
+├── manifest.json (生成されたファイル)
+├── service-worker.js (生成されたファイル)
+├── start-server.bat (生成されたファイル)
+├── icons/
+│   ├── icon192.png
+│   └── icon512.png
+└── python-portable/</pre>
+                        </li>
+                        <li><strong>起動</strong>
+                            <pre>start-server.batをダブルクリック</pre>
+                        </li>
+                    </ol>
+
+                    <h3>⚠️ 注意事項</h3>
+                    <ul>
+                        <li>HTTPSまたはlocalhost環境でのみPWA機能が有効になります</li>
+                        <li>アイコンファイル（icon192.png, icon512.png）は必須です</li>
+                        <li>オフライン環境での使用を前提とした設計です</li>
+                        <li>生成されたファイルはUTF-8（BOM付き）で保存してください</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class PWAGenerator {
+            constructor() {
+                this.htmlContent = '';
+                this.parsedData = {};
+                this.initializeEventListeners();
+            }
+
+            initializeEventListeners() {
+                // ファイル入力関連
+                const fileInput = document.getElementById('htmlFile');
+                const fileInputArea = document.getElementById('fileInputArea');
+                const htmlTextarea = document.getElementById('htmlTextarea');
+                const toggleInput = document.getElementById('toggleInput');
+
+                // ドラッグ&ドロップ
+                fileInputArea.addEventListener('dragover', this.handleDragOver.bind(this));
+                fileInputArea.addEventListener('drop', this.handleDrop.bind(this));
+                fileInputArea.addEventListener('click', () => fileInput.click());
+
+                // ファイル選択
+                fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+
+                // 入力方式切り替え
+                toggleInput.addEventListener('click', this.toggleInputMethod.bind(this));
+
+                // 生成ボタン
+                document.getElementById('generateBtn').addEventListener('click', this.generatePWAFiles.bind(this));
+
+                // タブ切り替え
+                document.querySelectorAll('.tab-button').forEach(button => {
+                    button.addEventListener('click', this.switchTab.bind(this));
+                });
+
+                // コピーボタン
+                document.querySelectorAll('.copy-btn').forEach(button => {
+                    button.addEventListener('click', this.copyToClipboard.bind(this));
+                });
+
+                // ダウンロードボタン
+                document.querySelectorAll('.download-btn').forEach(button => {
+                    button.addEventListener('click', this.downloadFile.bind(this));
+                });
+            }
+
+            handleDragOver(e) {
+                e.preventDefault();
+                e.currentTarget.classList.add('dragover');
+            }
+
+            handleDrop(e) {
+                e.preventDefault();
+                e.currentTarget.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    this.processFile(files[0]);
+                }
+            }
+
+            handleFileSelect(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    this.processFile(file);
+                }
+            }
+
+            processFile(file) {
+                if (!file.name.match(/\.(html|htm)$/i)) {
+                    this.showError('HTMLファイル（.html または .htm）を選択してください。');
+                    return;
+                }
+
+                if (file.size > 10 * 1024 * 1024) {
+                    this.showError('ファイルサイズが10MBを超えています。');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.htmlContent = e.target.result;
+                    this.showSuccess(`ファイル "${file.name}" を読み込みました。`);
+                    document.getElementById('htmlTextarea').value = this.htmlContent;
+                };
+                reader.onerror = () => {
+                    this.showError('ファイルの読み込みに失敗しました。');
+                };
+                reader.readAsText(file, 'UTF-8');
+            }
+
+            toggleInputMethod() {
+                const fileInputArea = document.getElementById('fileInputArea');
+                const htmlTextarea = document.getElementById('htmlTextarea');
+                const toggleBtn = document.getElementById('toggleInput');
+
+                if (fileInputArea.style.display === 'none') {
+                    fileInputArea.style.display = 'block';
+                    htmlTextarea.style.display = 'none';
+                    toggleBtn.textContent = 'テキスト入力に切り替え';
+                } else {
+                    fileInputArea.style.display = 'none';
+                    htmlTextarea.style.display = 'block';
+                    toggleBtn.textContent = 'ファイル選択に切り替え';
+                    htmlTextarea.focus();
+                }
+            }
+
+            parseHTML(htmlContent) {
+                try {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(htmlContent, 'text/html');
+
+                    // エラーチェック
+                    const parserError = doc.querySelector('parsererror');
+                    if (parserError) {
+                        throw new Error('HTMLの解析に失敗しました。');
+                    }
+
+                    const title = doc.querySelector('title')?.textContent?.trim() || 'My PWA App';
+                    const description = doc.querySelector('meta[name="description"]')?.getAttribute('content')?.trim() || 'Progressive Web Application';
+                    const themeColor = doc.querySelector('meta[name="theme-color"]')?.getAttribute('content')?.trim() || '#2196F3';
+
+                    // リソースを抽出
+                    const resources = this.extractResources(doc);
+
+                    return {
+                        title,
+                        shortName: title.length > 12 ? title.substring(0, 12) : title,
+                        description,
+                        themeColor,
+                        backgroundColor: '#ffffff',
+                        resources
+                    };
+                } catch (error) {
+                    throw new Error(`HTML解析エラー: ${error.message}`);
+                }
+            }
+
+            extractResources(doc) {
+                const resources = new Set(['./']);
+
+                // CSS ファイル
+                doc.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && !href.startsWith('http') && !href.startsWith('//')) {
+                        resources.add(href);
+                    }
+                });
+
+                // JavaScript ファイル
+                doc.querySelectorAll('script[src]').forEach(script => {
+                    const src = script.getAttribute('src');
+                    if (src && !src.startsWith('http') && !src.startsWith('//')) {
+                        resources.add(src);
+                    }
+                });
+
+                // 画像ファイル
+                doc.querySelectorAll('img[src]').forEach(img => {
+                    const src = img.getAttribute('src');
+                    if (src && !src.startsWith('http') && !src.startsWith('//')) {
+                        resources.add(src);
+                    }
+                });
+
+                return Array.from(resources);
+            }
+
+            generateManifest(data) {
+                const manifest = {
+                    name: data.title,
+                    short_name: data.shortName,
+                    description: data.description,
+                    start_url: "./index.html",
+                    display: "standalone",
+                    background_color: data.backgroundColor,
+                    theme_color: data.themeColor,
+                    icons: [
+                        {
+                            src: "icons/icon192.png",
+                            sizes: "192x192",
+                            type: "image/png"
+                        },
+                        {
+                            src: "icons/icon512.png",
+                            sizes: "512x512",
+                            type: "image/png"
+                        }
+                    ]
+                };
+
+                return JSON.stringify(manifest, null, 4);
+            }
+
+            generateServiceWorker(data) {
+                const cacheName = `${data.title.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-v1.0`;
+                const urlsToCache = [
+                    './index.html',
+                    './manifest.json',
+                    './icons/icon192.png',
+                    './icons/icon512.png',
+                    ...data.resources
+                ].filter((url, index, arr) => arr.indexOf(url) === index); // 重複除去
+
+                return `const CACHE_NAME = '${cacheName}';
+const urlsToCache = ${JSON.stringify(urlsToCache, null, 4)};
+
+// インストールイベント
+self.addEventListener('install', (event) => {
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then((cache) => {
+                console.log('キャッシュを開きました:', CACHE_NAME);
+                return cache.addAll(urlsToCache);
+            })
+            .catch(error => {
+                console.error('インストール時のキャッシュに失敗:', error);
+            })
+    );
+});
+
+// フェッチイベント
+self.addEventListener('fetch', (event) => {
+    event.respondWith(
+        caches.match(event.request)
+            .then((response) => {
+                // キャッシュにある場合はそれを返す
+                if (response) {
+                    return response;
+                }
+                // キャッシュにない場合はネットワークから取得を試行
+                return fetch(event.request).catch(() => {
+                    console.log('オフライン状態です:', event.request.url);
+                    // オフライン時のフォールバック処理をここに追加可能
+                });
+            })
+    );
+});
+
+// アクティベートイベント
+self.addEventListener('activate', (event) => {
+    const cacheWhitelist = [CACHE_NAME];
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cacheName) => {
+                    if (cacheWhitelist.indexOf(cacheName) === -1) {
+                        console.log('古いキャッシュを削除:', cacheName);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        })
+    );
+});`;
+            }
+
+            generateStartServer(port) {
+                return `@echo off
+SET PYTHON_DIR=%~dp0python-portable
+cd /d "%~dp0"
+start cmd /k "%PYTHON_DIR%\\python.exe" -m http.server ${port}
+timeout /t 3 >nul
+start chrome http://localhost:${port}/
+exit`;
+            }
+
+            generatePWAFiles() {
+                try {
+                    // HTMLコンテンツを取得
+                    const htmlTextarea = document.getElementById('htmlTextarea');
+                    this.htmlContent = htmlTextarea.value.trim() || this.htmlContent;
+
+                    if (!this.htmlContent) {
+                        this.showError('HTMLファイルまたはHTMLコードを入力してください。');
+                        return;
+                    }
+
+                    // ポート番号を取得
+                    const portNumber = document.getElementById('portNumber').value;
+                    if (!portNumber || portNumber < 1024 || portNumber > 65535) {
+                        this.showError('有効なポート番号（1024-65535）を入力してください。');
+                        return;
+                    }
+
+                    // HTML解析
+                    this.parsedData = this.parseHTML(this.htmlContent);
+
+                    // ファイル生成
+                    const manifestCode = this.generateManifest(this.parsedData);
+                    const serviceworkerCode = this.generateServiceWorker(this.parsedData);
+                    const startserverCode = this.generateStartServer(portNumber);
+
+                    // コードを表示
+                    document.getElementById('manifestCode').value = manifestCode;
+                    document.getElementById('serviceworkerCode').value = serviceworkerCode;
+                    document.getElementById('startserverCode').value = startserverCode;
+
+                    // 出力セクションを表示
+                    document.getElementById('outputSection').style.display = 'block';
+
+                    this.showSuccess('PWAファイルの生成が完了しました！');
+
+                    // 出力セクションまでスクロール
+                    document.getElementById('outputSection').scrollIntoView({ behavior: 'smooth' });
+
+                } catch (error) {
+                    this.showError(error.message);
+                }
+            }
+
+            switchTab(e) {
+                const targetTab = e.target.getAttribute('data-tab');
+
+                // タブボタンの状態を更新
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                e.target.classList.add('active');
+
+                // タブコンテンツの表示を更新
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(targetTab).classList.add('active');
+            }
+
+            async copyToClipboard(e) {
+                const targetId = e.target.getAttribute('data-target');
+                const content = document.getElementById(targetId).value;
+
+                try {
+                    await navigator.clipboard.writeText(content);
+                    this.showSuccess('クリップボードにコピーしました！');
+                } catch (error) {
+                    // フォールバック
+                    const textarea = document.getElementById(targetId);
+                    textarea.select();
+                    document.execCommand('copy');
+                    this.showSuccess('クリップボードにコピーしました！');
+                }
+            }
+
+            downloadFile(e) {
+                const targetId = e.target.getAttribute('data-target');
+                const filename = e.target.getAttribute('data-filename');
+                const content = document.getElementById(targetId).value;
+
+                const blob = new Blob(['\ufeff' + content], { type: 'text/plain;charset=utf-8' }); // BOM付きUTF-8
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                this.showSuccess(`${filename} をダウンロードしました！`);
+            }
+
+            showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                const successDiv = document.getElementById('successMessage');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                successDiv.style.display = 'none';
+                setTimeout(() => {
+                    errorDiv.style.display = 'none';
+                }, 5000);
+            }
+
+            showSuccess(message) {
+                const successDiv = document.getElementById('successMessage');
+                const errorDiv = document.getElementById('errorMessage');
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+                errorDiv.style.display = 'none';
+                setTimeout(() => {
+                    successDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // アプリケーション初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            new PWAGenerator();
+        });
+    </script>
+</body>
+</html>
