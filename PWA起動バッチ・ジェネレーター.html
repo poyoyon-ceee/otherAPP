@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webアプリ起動バッチファイル ジェネレーター</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #34495e;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .output {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        
+        .download-btn {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+            margin-top: 15px;
+        }
+        
+        .download-btn:hover {
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+        }
+        
+        .example {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #3498db;
+        }
+        
+        .example h4 {
+            margin-top: 0;
+            color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Webアプリ起動バッチファイル ジェネレーター</h1>
+        
+        <form id="batchForm">
+            <div class="form-group">
+                <label for="port">ポート番号:</label>
+                <input type="number" id="port" value="8001" min="1000" max="65535" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="filename">HTMLファイル名:</label>
+                <input type="text" id="filename" value="index.html" required>
+                <small style="color: #7f8c8d;">例: index.html, app.html, main.html</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="browser">ブラウザ:</label>
+                <select id="browser">
+                    <option value="chrome">Chrome</option>
+                    <option value="edge">Edge</option>
+                    <option value="firefox">Firefox</option>
+                    <option value="opera">Opera</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="waitTime">サーバー起動待機時間（秒）:</label>
+                <input type="number" id="waitTime" value="3" min="1" max="10">
+            </div>
+            
+            <div class="form-group">
+                <label for="autoClose">自動終了時間（秒）:</label>
+                <input type="number" id="autoClose" value="5" min="0" max="60">
+                <small style="color: #7f8c8d;">0に設定すると自動終了しません</small>
+            </div>
+            
+            <button type="submit" class="btn">📝 バッチファイルを生成</button>
+        </form>
+        
+        <div id="output" class="output" style="display: none;">
+            <h3>生成されたバッチファイル:</h3>
+            <div id="batchContent" class="code-block"></div>
+            <button id="downloadBtn" class="btn download-btn">💾 バッチファイルをダウンロード</button>
+        </div>
+        
+        <div class="example">
+            <h4>📋 使用例</h4>
+            <p><strong>在庫マスターアプリ:</strong> ポート8001、zaiko.html、Chrome</p>
+            <p><strong>開発サーバー:</strong> ポート3000、index.html、Edge</p>
+            <p><strong>テスト環境:</strong> ポート8080、test.html、Firefox</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('batchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            generateBatchFile();
+        });
+
+        function generateBatchFile() {
+            const port = document.getElementById('port').value;
+            const filename = document.getElementById('filename').value;
+            const browser = document.getElementById('browser').value;
+            const waitTime = document.getElementById('waitTime').value;
+            const autoClose = document.getElementById('autoClose').value;
+            
+            const batchName = `start_${filename.replace('.html', '')}_${port}.bat`;
+            
+            let batchContent = `@echo off
+
+SET PYTHON_DIR=%~dp0python-portable
+
+
+cd /d "%~dp0"
+
+
+start "" "%PYTHON_DIR%\\python.exe" -m http.server ${port}
+
+
+timeout /t ${waitTime} >nul
+start ${browser} "http://localhost:${port}/${filename}"`;
+
+            if (autoClose > 0) {
+                batchContent += `
+
+timeout /t ${autoClose} >nul
+taskkill /f /im python.exe >nul 2>&1`;
+            }
+            
+            batchContent += `
+
+exit`;
+
+            document.getElementById('batchContent').textContent = batchContent;
+            document.getElementById('output').style.display = 'block';
+            
+            // ダウンロードボタンのイベントリスナーを設定
+            document.getElementById('downloadBtn').onclick = function() {
+                downloadBatchFile(batchName, batchContent);
+            };
+        }
+
+        function downloadBatchFile(filename, content) {
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // リアルタイムプレビュー
+        document.getElementById('port').addEventListener('input', updatePreview);
+        document.getElementById('filename').addEventListener('input', updatePreview);
+        document.getElementById('browser').addEventListener('change', updatePreview);
+
+        function updatePreview() {
+            const port = document.getElementById('port').value;
+            const filename = document.getElementById('filename').value;
+            const browser = document.getElementById('browser').value;
+            
+            if (port && filename) {
+                const previewText = `生成されるファイル名: start_${filename.replace('.html', '')}_${port}.bat
+アクセスURL: http://localhost:${port}/${filename}
+ブラウザ: ${browser}`;
+                
+                // プレビュー表示（オプション）
+                console.log(previewText);
+            }
+        }
+    </script>
+</body>
+</html>
