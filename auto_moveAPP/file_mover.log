@@ -1,0 +1,10 @@
+2025-09-14 16:36:59,732 - INFO - 安全移動開始: test_file.txt
+2025-09-14 16:36:59,734 - ERROR - 安全移動エラー: name 'hashlib' is not defined
+2025-09-14 16:36:59,735 - INFO - エラー時のクリーンアップ完了: test_file.txt
+2025-09-14 16:36:59,738 - INFO - 安全移動開始: large_file.bin
+2025-09-14 16:36:59,740 - ERROR - 安全移動エラー: name 'hashlib' is not defined
+2025-09-14 16:36:59,741 - INFO - エラー時のクリーンアップ完了: large_file.bin
+2025-09-14 16:37:07,270 - INFO - 安全移動開始: test_file.txt
+2025-09-14 16:37:07,281 - INFO - 元ファイル削除完了: test_file.txt
+2025-09-14 16:37:07,287 - INFO - 安全移動開始: large_file.bin
+2025-09-14 16:37:07,312 - INFO - 元ファイル削除完了: large_file.bin
