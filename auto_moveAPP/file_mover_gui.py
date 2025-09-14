@@ -20,6 +20,8 @@ import re
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import sys
+import pystray
+from PIL import Image, ImageDraw
 
 class FileAutoMover(FileSystemEventHandler):
     """ファイル自動移動ハンドラー"""
@@ -307,12 +309,17 @@ class FileMoverGUI:
         self.mover = None
         self.observer = None
         self.monitoring = False
+        self.tray_icon = None
+        self.minimize_to_tray = True
         
         # GUI構築
         self.create_widgets()
         
         # 設定読み込み
         self.load_settings()
+        
+        # システムトレイアイコン作成
+        self.create_tray_icon()
         
     def create_widgets(self):
         """ウィジェット作成"""
@@ -327,6 +334,7 @@ class FileMoverGUI:
         ttk.Button(button_frame, text="設定", command=self.open_settings).pack(side=tk.LEFT, padx=(0, 5))
         ttk.Button(button_frame, text="スタートアップ設定", command=self.open_startup_settings).pack(side=tk.LEFT, padx=(0, 5))
         ttk.Button(button_frame, text="ログ表示", command=self.open_log).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(button_frame, text="トレイに最小化", command=self.minimize_to_tray_window).pack(side=tk.LEFT, padx=(0, 5))
         
         # ステータス表示
         status_frame = ttk.LabelFrame(main_frame, text="ステータス", padding="5")
@@ -457,15 +465,131 @@ class FileMoverGUI:
         """アプリケーション実行"""
         try:
             self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
-            self.root.mainloop()
+            
+            # スタートアップ時の動作確認
+            if self.is_startup_launch():
+                # スタートアップ起動の場合は最小化で起動
+                self.root.withdraw()  # ウィンドウを隠す
+                if self.tray_icon:
+                    # 別スレッドでトレイアイコンを実行
+                    import threading
+                    tray_thread = threading.Thread(target=self.tray_icon.run_detached, daemon=True)
+                    tray_thread.start()
+                # 自動的に監視開始
+                self.start_monitoring()
+                # メインループを実行（トレイアイコン用）
+                self.root.mainloop()
+            else:
+                # 通常起動の場合は通常表示
+                self.root.mainloop()
         except Exception as e:
             messagebox.showerror("エラー", f"アプリケーションエラー: {e}")
     
+    def is_startup_launch(self):
+        """スタートアップ起動かどうかを判定"""
+        try:
+            # コマンドライン引数をチェック
+            if len(sys.argv) > 1 and '--startup' in sys.argv:
+                return True
+            
+            # または、スタートアップディレクトリから起動されているかチェック
+            startup_dir = os.path.join(os.environ['APPDATA'], 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup')
+            current_dir = os.path.dirname(sys.executable if getattr(sys, 'frozen', False) else __file__)
+            
+            if current_dir.startswith(startup_dir):
+                return True
+                
+            return False
+        except:
+            return False
+    
+    def create_tray_icon(self):
+        """システムトレイアイコン作成"""
+        try:
+            # アイコン画像作成
+            image = Image.new('RGB', (64, 64), color='blue')
+            dc = ImageDraw.Draw(image)
+            dc.text((10, 20), "FM", fill='white')
+            
+            # メニュー作成
+            menu = pystray.Menu(
+                pystray.MenuItem("表示", self.show_window),
+                pystray.MenuItem("監視開始", self.start_monitoring_from_tray),
+                pystray.MenuItem("監視停止", self.stop_monitoring_from_tray),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem("終了", self.quit_application)
+            )
+            
+            # トレイアイコン作成
+            self.tray_icon = pystray.Icon(
+                "FileMover", 
+                image, 
+                "ダウンロード自動振り分け", 
+                menu,
+                default_action=self.show_window
+            )
+            
+        except Exception as e:
+            print(f"トレイアイコン作成エラー: {e}")
+            self.tray_icon = None
+    
+    def minimize_to_tray_window(self):
+        """トレイに最小化"""
+        if self.tray_icon:
+            self.root.withdraw()
+            if not self.tray_icon.visible:
+                # 別スレッドでトレイアイコンを実行
+                import threading
+                tray_thread = threading.Thread(target=self.tray_icon.run_detached, daemon=True)
+                tray_thread.start()
+    
+    def show_window(self, icon=None, item=None):
+        """ウィンドウを表示"""
+        self.root.deiconify()
+        self.root.lift()
+        self.root.focus_force()
+    
+    def start_monitoring_from_tray(self, icon=None, item=None):
+        """トレイから監視開始"""
+        self.start_monitoring()
+    
+    def stop_monitoring_from_tray(self, icon=None, item=None):
+        """トレイから監視停止"""
+        self.stop_monitoring()
+    
+    def quit_application(self, icon=None, item=None):
+        """アプリケーション終了"""
+        try:
+            # 監視停止
+            if self.monitoring:
+                self.stop_monitoring()
+            
+            # トレイアイコン停止
+            if self.tray_icon:
+                self.tray_icon.stop()
+                self.tray_icon = None
+            
+            # ウィンドウ終了
+            self.root.quit()
+            self.root.destroy()
+            
+            # プロセス終了
+            import os
+            os._exit(0)
+            
+        except Exception as e:
+            print(f"終了処理エラー: {e}")
+            import os
+            os._exit(0)
+    
     def on_closing(self):
         """アプリケーション終了時"""
-        if self.monitoring:
-            self.stop_monitoring()
-        self.root.destroy()
+        if self.minimize_to_tray and self.tray_icon:
+            # トレイに最小化
+            self.minimize_to_tray_window()
+        else:
+            # 完全終了
+            self.quit_application()
 
 class SettingsWindow:
     """設定画面"""
@@ -504,26 +628,35 @@ class SettingsWindow:
         rules_frame = ttk.LabelFrame(main_frame, text="振り分けルール", padding="5")
         rules_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
         
+        # ルール操作ボタン（上部に配置）
+        rule_buttons = ttk.Frame(rules_frame)
+        rule_buttons.pack(fill=tk.X, pady=(0, 5))
+        
+        ttk.Button(rule_buttons, text="追加", command=self.add_rule).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(rule_buttons, text="編集", command=self.edit_rule).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(rule_buttons, text="削除", command=self.delete_rule).pack(side=tk.LEFT, padx=(0, 5))
+        
         # ルール一覧
-        self.rules_tree = ttk.Treeview(rules_frame, columns=('pattern', 'destination', 'action'), show='headings')
+        tree_frame = ttk.Frame(rules_frame)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        
+        self.rules_tree = ttk.Treeview(tree_frame, columns=('pattern', 'destination', 'action'), show='tree headings')
         self.rules_tree.heading('#0', text='名前')
         self.rules_tree.heading('pattern', text='パターン')
         self.rules_tree.heading('destination', text='移動先')
         self.rules_tree.heading('action', text='アクション')
         
-        scrollbar_rules = ttk.Scrollbar(rules_frame, orient=tk.VERTICAL, command=self.rules_tree.yview)
+        # 列幅設定
+        self.rules_tree.column('#0', width=150, minwidth=100)
+        self.rules_tree.column('pattern', width=200, minwidth=150)
+        self.rules_tree.column('destination', width=250, minwidth=200)
+        self.rules_tree.column('action', width=80, minwidth=60)
+        
+        scrollbar_rules = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=self.rules_tree.yview)
         self.rules_tree.configure(yscrollcommand=scrollbar_rules.set)
         
         self.rules_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar_rules.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        # ルール操作ボタン
-        rule_buttons = ttk.Frame(rules_frame)
-        rule_buttons.pack(fill=tk.X, pady=(5, 0))
-        
-        ttk.Button(rule_buttons, text="追加", command=self.add_rule).pack(side=tk.LEFT, padx=(0, 5))
-        ttk.Button(rule_buttons, text="編集", command=self.edit_rule).pack(side=tk.LEFT, padx=(0, 5))
-        ttk.Button(rule_buttons, text="削除", command=self.delete_rule).pack(side=tk.LEFT, padx=(0, 5))
         
         # その他設定
         other_frame = ttk.LabelFrame(main_frame, text="その他設定", padding="5")
@@ -551,14 +684,23 @@ class SettingsWindow:
     
     def load_current_settings(self):
         """現在の設定を読み込み"""
-        if self.mover and self.mover.config:
-            config = self.mover.config
-            self.folder_var.set(config.get('watch_folder', ''))
-            self.delay_var.set(config.get('delay_seconds', 3))
-            self.create_dirs_var.set(config.get('create_directories', True))
-            
-            # ルール一覧を更新
-            self.update_rules_list()
+        try:
+            if self.mover and self.mover.config:
+                config = self.mover.config
+                self.folder_var.set(config.get('watch_folder', ''))
+                self.delay_var.set(config.get('delay_seconds', 3))
+                self.create_dirs_var.set(config.get('create_directories', True))
+                
+                # ルール一覧を更新
+                self.update_rules_list()
+            else:
+                # デフォルト設定を表示
+                self.folder_var.set(os.path.expanduser("~/Downloads"))
+                self.delay_var.set(3)
+                self.create_dirs_var.set(True)
+                self.update_rules_list()
+        except Exception as e:
+            messagebox.showerror("エラー", f"設定の読み込みに失敗しました: {e}")
     
     def update_rules_list(self):
         """ルール一覧を更新"""
@@ -607,13 +749,21 @@ class SettingsWindow:
     
     def add_rule_callback(self, rule_data):
         """ルール追加コールバック"""
-        self.rules_tree.insert('', tk.END, text=rule_data['name'],
-                             values=(rule_data['pattern'], rule_data['destination'], rule_data['action']))
+        try:
+            self.rules_tree.insert('', tk.END, text=rule_data['name'],
+                                 values=(rule_data['pattern'], rule_data['destination'], rule_data['action']))
+            self.log_callback(f"ルール追加: {rule_data['name']}")
+        except Exception as e:
+            messagebox.showerror("エラー", f"ルール追加に失敗しました: {e}")
     
     def edit_rule_callback(self, rule_data, item_id):
         """ルール編集コールバック"""
-        self.rules_tree.item(item_id, text=rule_data['name'],
-                           values=(rule_data['pattern'], rule_data['destination'], rule_data['action']))
+        try:
+            self.rules_tree.item(item_id, text=rule_data['name'],
+                               values=(rule_data['pattern'], rule_data['destination'], rule_data['action']))
+            self.log_callback(f"ルール編集: {rule_data['name']}")
+        except Exception as e:
+            messagebox.showerror("エラー", f"ルール編集に失敗しました: {e}")
     
     def save_settings(self):
         """設定保存"""
@@ -833,13 +983,15 @@ class StartupSettingsWindow:
             startup_dir = os.path.join(os.environ['APPDATA'], 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup')
             shortcut_path = os.path.join(startup_dir, 'ダウンロード自動振り分け.lnk')
             
-            # PowerShellを使用してショートカット作成
+            # PowerShellを使用してショートカット作成（最小化で起動）
             ps_command = f'''
             $WshShell = New-Object -comObject WScript.Shell
             $Shortcut = $WshShell.CreateShortcut("{shortcut_path}")
             $Shortcut.TargetPath = "{exe_path}"
+            $Shortcut.Arguments = "--startup"
             $Shortcut.WorkingDirectory = "{os.path.dirname(exe_path)}"
-            $Shortcut.Description = "ダウンロードフォルダ自動振り分けアプリ"
+            $Shortcut.Description = "ダウンロードフォルダ自動振り分けアプリ（最小化起動）"
+            $Shortcut.WindowStyle = 7
             $Shortcut.Save()
             '''
             

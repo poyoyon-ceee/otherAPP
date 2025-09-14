@@ -1,0 +1,19 @@
+{
+  "watch_folder": "C:/Users/falco/Downloads",
+  "delay_seconds": 3,
+  "create_directories": true,
+  "log_level": "INFO",
+  "safe_move": {
+    "enabled": true,
+    "hash_check_threshold": 104857600,
+    "verify_integrity": true
+  },
+  "rules": [
+    {
+      "name": "kaunetファイル",
+      "pattern": ".*kaunet_.*",
+      "destination": "C:/LocalApp/kaunetAPP/DATA",
+      "action": "move"
+    }
+  ]
+}
