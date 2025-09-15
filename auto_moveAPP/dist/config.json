@@ -1,7 +1,7 @@
 {
   "watch_folder": "C:/Users/falco/Downloads",
   "delay_seconds": 3,
-  "create_directories": true,
+  "create_directories": false,
   "log_level": "INFO",
   "safe_move": {
     "enabled": true,
@@ -13,6 +13,18 @@
       "name": "kaunetファイル",
       "pattern": ".*kaunet_.*",
       "destination": "C:/LocalApp/kaunetAPP/DATA",
+      "action": "move"
+    },
+    {
+      "name": "nippoファイル",
+      "pattern": ".*nippo_.*",
+      "destination": "C:/LocalApp/nippo/DATA",
+      "action": "move"
+    },
+    {
+      "name": "zaikoファイル",
+      "pattern": ".*zaiko_.*",
+      "destination": "C:/LocalApp/在庫マスターAPP/data",
       "action": "move"
     }
   ]

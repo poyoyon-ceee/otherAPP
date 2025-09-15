@@ -747,7 +747,7 @@ class SettingsWindow:
         if messagebox.askyesno("確認", "選択したルールを削除しますか？"):
             self.rules_tree.delete(selection[0])
     
-    def add_rule_callback(self, rule_data):
+    def add_rule_callback(self, rule_data, item_id=None):
         """ルール追加コールバック"""
         try:
             self.rules_tree.insert('', tk.END, text=rule_data['name'],
