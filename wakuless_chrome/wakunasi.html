@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>枠なしChromeショートカット作成ツール</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        .title {
+            color: #333;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        input[type="url"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        input[type="url"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .create-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+        .create-btn:hover { transform: translateY(-2px); }
+        .create-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .example {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #666;
+        }
+        .command-box {
+            background: #f1f3f4;
+            border: 1px solid #dadce0;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            word-break: break-all;
+            cursor: pointer;
+        }
+        .command-box:hover {
+            background: #e8eaed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">枠なしChromeショートカット作成</h1>
+        
+        <div class="input-group">
+            <label for="websiteUrl">ウェブサイトのURL</label>
+            <input type="url" id="websiteUrl" placeholder="https://example.com" required>
+        </div>
+
+        <button class="create-btn" id="createBtn" onclick="createShortcut()">
+            バッチファイル作成
+        </button>
+        
+        <button class="create-btn" id="createLnkBtn" onclick="createLnkShortcut()" style="margin-top: 10px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+            .lnkファイル作成
+        </button>
+
+        <div class="status" id="status"></div>
+
+        <div class="example">
+            <strong>使用例：</strong><br>
+            • https://gmail.com<br>
+            • https://tver.jp<br>
+            • https://notion.so
+        </div>
+    </div>
+
+    <script>
+        const websiteUrlInput = document.getElementById('websiteUrl');
+        const createBtn = document.getElementById('createBtn');
+        const statusDiv = document.getElementById('status');
+
+        function getChromePath() {
+            return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+        }
+
+        // サイト名を取得して日本語化する関数
+        function getSiteDisplayName(url) {
+            try {
+                const urlObj = new URL(url);
+                let siteName = urlObj.hostname.replace('www.', '');
+                
+                // よく使われるサイト名を日本語化
+                const siteNames = {
+                    'gmail.com': 'Gmail',
+                    'google.com': 'Google',
+                    'youtube.com': 'YouTube',
+                    'facebook.com': 'Facebook',
+                    'twitter.com': 'Twitter',
+                    'instagram.com': 'Instagram',
+                    'tiktok.com': 'TikTok',
+                    'discord.com': 'Discord',
+                    'notion.so': 'Notion',
+                    'tver.jp': 'TVer',
+                    'netflix.com': 'Netflix',
+                    'amazon.co.jp': 'Amazon',
+                    'yahoo.co.jp': 'Yahoo',
+                    'rakuten.co.jp': '楽天',
+                    'mercari.com': 'メルカリ',
+                    'paypay.ne.jp': 'PayPay',
+                    'line.me': 'LINE',
+                    'zoom.us': 'Zoom',
+                    'slack.com': 'Slack',
+                    'github.com': 'GitHub',
+                    'stackoverflow.com': 'Stack Overflow',
+                    'reddit.com': 'Reddit',
+                    'linkedin.com': 'LinkedIn',
+                    'pinterest.com': 'Pinterest',
+                    'twitch.tv': 'Twitch',
+                    'spotify.com': 'Spotify',
+                    'apple.com': 'Apple',
+                    'microsoft.com': 'Microsoft',
+                    'adobe.com': 'Adobe',
+                    'dropbox.com': 'Dropbox',
+                    'onedrive.live.com': 'OneDrive'
+                };
+                
+                // 完全一致する場合
+                if (siteNames[siteName]) {
+                    return siteNames[siteName];
+                }
+                
+                // 部分一致する場合（例：subdomain.example.com）
+                for (const [key, value] of Object.entries(siteNames)) {
+                    if (siteName.includes(key)) {
+                        return value;
+                    }
+                }
+                
+                // ドメイン名の最初の部分を大文字化
+                const parts = siteName.split('.');
+                if (parts.length > 0) {
+                    const mainName = parts[0];
+                    return mainName.charAt(0).toUpperCase() + mainName.slice(1);
+                }
+                
+                return siteName;
+            } catch (error) {
+                return 'Unknown';
+            }
+        }
+
+        function createShortcut() {
+            const url = websiteUrlInput.value.trim();
+            
+            if (!url) {
+                showStatus('URLを入力してください', 'error');
+                return;
+            }
+            
+            try {
+                new URL(url);
+            } catch (error) {
+                showStatus('正しいURLを入力してください', 'error');
+                return;
+            }
+            
+            createBtn.disabled = true;
+            createBtn.textContent = '作成中...';
+            
+            try {
+                const chromePath = getChromePath();
+                const siteDisplayName = getSiteDisplayName(url);
+                
+                // バッチファイルの内容を作成
+                const batchContent = `@echo off
+title ${siteDisplayName} - 枠なしChromeアプリ
+start "" "${chromePath}" --app="${url}" --window-position=center
+`;
+                
+                // ファイルをダウンロード
+                downloadFile(`${siteDisplayName}-枠なし.bat`, batchContent);
+                
+                showStatus(`成功！「${siteDisplayName}-枠なし.bat」をダウンロードフォルダに保存しました。`, 'success');
+                
+                // ダウンロード後に自動実行のオプションを表示
+                const autoRunBox = document.createElement('div');
+                autoRunBox.className = 'command-box';
+                autoRunBox.innerHTML = `
+                    <strong>ダウンロード完了！</strong><br>
+                    ダウンロードしたバッチファイルをダブルクリックして実行してください。<br>
+                    <button onclick="runChromeApp('${url}')" style="margin-top: 8px; padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        今すぐ枠なしChromeアプリを起動
+                    </button>
+                `;
+                statusDiv.appendChild(autoRunBox);
+                
+                websiteUrlInput.value = '';
+                
+            } catch (error) {
+                showStatus(`エラー: ${error.message}`, 'error');
+            } finally {
+                createBtn.disabled = false;
+                createBtn.textContent = 'ショートカット作成';
+            }
+        }
+
+        // ファイルをダウンロードする関数
+        function downloadFile(filename, content) {
+            // VBScriptファイルの場合はShift_JISエンコーディングを使用
+            let blob;
+            if (filename.endsWith('.vbs')) {
+                // Shift_JISエンコーディングでVBScriptファイルを作成
+                const encoder = new TextEncoder();
+                const uint8Array = encoder.encode(content);
+                blob = new Blob([uint8Array], { type: 'text/plain;charset=shift_jis' });
+            } else {
+                blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            }
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // .lnkファイルを作成する関数
+        function createLnkShortcut() {
+            const url = websiteUrlInput.value.trim();
+            
+            if (!url) {
+                showStatus('URLを入力してください', 'error');
+                return;
+            }
+            
+            try {
+                new URL(url);
+            } catch (error) {
+                showStatus('正しいURLを入力してください', 'error');
+                return;
+            }
+            
+            const createLnkBtn = document.getElementById('createLnkBtn');
+            createLnkBtn.disabled = true;
+            createLnkBtn.textContent = '作成中...';
+            
+            try {
+                const chromePath = getChromePath();
+                const siteDisplayName = getSiteDisplayName(url);
+                
+                // VBScriptで.lnkファイルを作成する内容（エラーハンドリング付き）
+                const vbsContent = `On Error Resume Next
+Set oWS = WScript.CreateObject("WScript.Shell")
+If Err.Number <> 0 Then
+    WScript.Echo "Error creating WScript.Shell: " & Err.Description
+    WScript.Quit
+End If
+
+sDesktopPath = oWS.SpecialFolders("Desktop")
+If Err.Number <> 0 Then
+    WScript.Echo "Error getting Desktop path: " & Err.Description
+    WScript.Quit
+End If
+
+sLinkFile = sDesktopPath & "\\${siteDisplayName}-ChromeApp.lnk"
+Set oLink = oWS.CreateShortcut(sLinkFile)
+If Err.Number <> 0 Then
+    WScript.Echo "Error creating shortcut object: " & Err.Description
+    WScript.Quit
+End If
+
+oLink.TargetPath = "${chromePath}"
+oLink.Arguments = "--app=""${url}"" --window-position=center"
+oLink.IconLocation = "${chromePath}"
+oLink.Description = "${siteDisplayName} - Chrome App"
+oLink.Save
+
+If Err.Number <> 0 Then
+    WScript.Echo "Error saving shortcut: " & Err.Description
+    WScript.Echo "Path: " & sLinkFile
+Else
+    WScript.Echo "Shortcut created successfully: " & sLinkFile
+End If`;
+                
+                // VBScriptファイルをダウンロード
+                downloadFile(`${siteDisplayName}-ChromeApp_shortcut.vbs`, vbsContent);
+                
+                showStatus(`成功！「${siteDisplayName}-ChromeApp_shortcut.vbs」をダウンロードフォルダに保存しました。`, 'success');
+                
+                // 使用方法を表示
+                const usageBox = document.createElement('div');
+                usageBox.className = 'command-box';
+                usageBox.innerHTML = `
+                    <strong>使用方法：</strong><br>
+                    1. ダウンロードしたVBScriptファイルをダブルクリック<br>
+                    2. デスクトップに「${siteDisplayName}-ChromeApp.lnk」が作成されます<br>
+                    3. 作成された.lnkファイルをダブルクリックして実行<br><br>
+                    <button onclick="runChromeApp('${url}')" style="margin-top: 8px; padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        今すぐ枠なしChromeアプリを起動
+                    </button>
+                `;
+                statusDiv.appendChild(usageBox);
+                
+                websiteUrlInput.value = '';
+                
+            } catch (error) {
+                showStatus(`エラー: ${error.message}`, 'error');
+            } finally {
+                createLnkBtn.disabled = false;
+                createLnkBtn.textContent = '.lnkファイル作成';
+            }
+        }
+
+        // Chromeアプリを直接起動する関数
+        function runChromeApp(url) {
+            const chromePath = getChromePath();
+            const command = `"${chromePath}" --app="${url}" --window-position=center`;
+            
+            // コマンドをクリップボードにコピー
+            navigator.clipboard.writeText(command).then(() => {
+                showStatus('コマンドをクリップボードにコピーしました。コマンドプロンプトで実行してください。', 'success');
+            }).catch(() => {
+                showStatus('コマンドのコピーに失敗しました。手動でコピーしてください。', 'error');
+            });
+        }
+
+        function showStatus(message, type) {
+            statusDiv.innerHTML = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 8000);
+        }
+
+        websiteUrlInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                createShortcut();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            websiteUrlInput.focus();
+        });
+    </script>
+</body>
+</html>
