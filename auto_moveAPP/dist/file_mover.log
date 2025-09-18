@@ -226,3 +226,51 @@
 2025-09-16 00:06:19,772 - INFO - 安全移動完了: zaiko_在庫サマリー_20250907_0021.csv -> C:\LocalApp\在庫マスターAPP\data
 2025-09-16 00:06:22,774 - INFO - 処理開始: zaiko_在庫サマリー_20250907_0025.csv
 2025-09-16 00:06:22,798 - INFO - 安全移動完了: zaiko_在庫サマリー_20250907_0025.csv -> C:\LocalApp\在庫マスターAPP\data
+2025-09-16 00:29:35,092 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\9a7fd2a9-6479-4424-814a-0f6b6d1f64ef.tmp
+2025-09-16 00:29:38,093 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 221205.crdownload
+2025-09-16 00:29:41,094 - INFO - 処理開始: FlexRena84 (1).zip
+2025-09-16 00:29:41,094 - INFO - マッチするルールがありません: FlexRena84 (1).zip
+2025-09-16 21:26:27,633 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\242a1224-9a2d-4d92-b906-90747782b869.tmp
+2025-09-16 21:26:30,637 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 290393.crdownload
+2025-09-16 21:26:33,638 - INFO - 処理開始: FlexRena84 (2).zip
+2025-09-16 21:26:33,639 - INFO - マッチするルールがありません: FlexRena84 (2).zip
+2025-09-17 23:08:36,935 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\e131ff96-7987-46ba-89c1-6ccb8baf6201.tmp
+2025-09-17 23:08:39,937 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 125433.crdownload
+2025-09-17 23:08:42,938 - INFO - 処理開始: genba_yuu.json
+2025-09-17 23:08:42,939 - INFO - マッチするルールがありません: genba_yuu.json
+2025-09-18 21:14:49,479 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\0712f822-4333-4172-91aa-a208fb026c55.tmp
+2025-09-18 21:14:52,481 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 198195.crdownload
+2025-09-18 21:14:55,482 - INFO - 処理開始: genba_現場データ.json
+2025-09-18 21:14:55,482 - INFO - マッチするルールがありません: genba_現場データ.json
+2025-09-18 22:05:44,226 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\5dfa0dd7-b841-444a-8571-036ee96bee1f.tmp
+2025-09-18 22:05:47,228 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 685566.crdownload
+2025-09-18 22:05:50,229 - INFO - 処理開始: kissfx.com_create_shortcut.vbs
+2025-09-18 22:05:50,229 - INFO - マッチするルールがありません: kissfx.com_create_shortcut.vbs
+2025-09-18 22:06:20,172 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\3713d5be-fbc4-4470-b780-c7cc64192c42.tmp
+2025-09-18 22:06:23,173 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 282903.crdownload
+2025-09-18 22:06:26,174 - INFO - 処理開始: kissfx.com_枠なしChrome.bat
+2025-09-18 22:06:26,175 - INFO - マッチするルールがありません: kissfx.com_枠なしChrome.bat
+2025-09-18 22:07:04,058 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\aad2f0b9-35e3-4cc7-8f98-0ab23d734dcd.tmp
+2025-09-18 22:07:07,059 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 408720.crdownload
+2025-09-18 22:07:10,060 - INFO - 処理開始: kissfx.com_create_shortcut.vbs
+2025-09-18 22:07:10,060 - INFO - マッチするルールがありません: kissfx.com_create_shortcut.vbs
+2025-09-18 22:09:44,196 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\2f47c98e-27e9-4341-b3cd-e0712106122c.tmp
+2025-09-18 22:09:47,197 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 873808.crdownload
+2025-09-18 22:09:50,198 - INFO - 処理開始: kissfx.com_create_shortcut (1).vbs
+2025-09-18 22:09:50,198 - INFO - マッチするルールがありません: kissfx.com_create_shortcut (1).vbs
+2025-09-18 22:11:36,160 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\81796725-6e13-4c28-a418-7135638316fb.tmp
+2025-09-18 22:11:39,161 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 815996.crdownload
+2025-09-18 22:11:42,162 - INFO - 処理開始: kissfx.com_create_shortcut (2).vbs
+2025-09-18 22:11:42,162 - INFO - マッチするルールがありません: kissfx.com_create_shortcut (2).vbs
+2025-09-18 22:17:02,451 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\fd44cdf4-9116-4a5e-94dc-6a66e081849a.tmp
+2025-09-18 22:17:05,452 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 307916.crdownload
+2025-09-18 22:17:08,452 - INFO - 処理開始: Fxnav-枠なし_shortcut.vbs
+2025-09-18 22:17:08,452 - INFO - マッチするルールがありません: Fxnav-枠なし_shortcut.vbs
+2025-09-18 22:17:43,127 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\3cb383b9-f397-4df7-b264-7edfe78f4767.tmp
+2025-09-18 22:17:46,128 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 600797.crdownload
+2025-09-18 22:17:49,129 - INFO - 処理開始: Fxnav-枠なし.bat
+2025-09-18 22:17:49,129 - INFO - マッチするルールがありません: Fxnav-枠なし.bat
+2025-09-18 22:19:55,105 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\5bbe020e-0df4-44e3-b1af-2d41d7a3ed6c.tmp
+2025-09-18 22:19:58,106 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 833258.crdownload
+2025-09-18 22:20:01,107 - INFO - 処理開始: Fxnav-ChromeApp_shortcut.vbs
+2025-09-18 22:20:01,107 - INFO - マッチするルールがありません: Fxnav-ChromeApp_shortcut.vbs
