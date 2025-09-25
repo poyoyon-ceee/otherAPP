@@ -1,2 +1,117 @@
 2025-09-15 20:06:28,822 - INFO - 処理開始: test_kaunet_file.txt
-2025-09-15 20:06:28,822 - INFO - 処理開始: test_kaunet_file.txt
+2025-09-15 20:06:28,822 - INFO - 処理開始: test_kaunet_file.txt2025-09-23 21:16:16,710 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\c5525b5a-8d1e-4701-8ae2-4c20698778c0.tmp
+2025-09-23 21:16:19,712 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 234333.crdownload
+2025-09-23 21:16:22,713 - INFO - 処理開始: 画像ICO変換.html
+2025-09-23 21:16:22,714 - INFO - マッチするルールがありません: 画像ICO変換.html
+2025-09-23 21:16:25,715 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\49733956-f0c2-4482-bd22-f293dd6dde38.tmp
+2025-09-23 21:16:28,716 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 770536.crdownload
+2025-09-23 21:16:31,717 - INFO - 処理開始: nippo_7_9月22日.csv
+2025-09-23 21:16:31,758 - INFO - 安全移動完了: nippo_7_9月22日.csv -> C:\LocalApp\nippo\DATA
+2025-09-23 21:16:34,762 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\6ecf1e31-a15a-465d-9b34-2d01d033d52f.tmp
+2025-09-23 21:16:37,763 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 729656.crdownload
+2025-09-23 21:16:40,763 - INFO - 処理開始: 枠なしWEBショートカット作成.html
+2025-09-23 21:16:40,767 - INFO - マッチするルールがありません: 枠なしWEBショートカット作成.html
+2025-09-23 21:17:12,876 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\eaafd1d2-1aa1-4fc7-9baf-b18f73c34679.tmp
+2025-09-23 21:17:15,877 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 799114.crdownload
+2025-09-23 21:17:18,878 - INFO - 処理開始: -ChromeApp_shortcut (7).vbs
+2025-09-23 21:17:18,878 - INFO - マッチするルールがありません: -ChromeApp_shortcut (7).vbs
+2025-09-23 21:18:07,689 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\bd0ecc1b-b25d-429a-9973-45f9343b5d5c.tmp
+2025-09-23 21:18:10,690 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 459570.crdownload
+2025-09-23 21:18:13,691 - INFO - 処理開始: -ChromeApp_shortcut (8).vbs
+2025-09-23 21:18:13,692 - INFO - マッチするルールがありません: -ChromeApp_shortcut (8).vbs
+2025-09-23 21:22:42,180 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\a5ba2ce8-bea2-4513-b0a3-55d70d90e3e9.tmp
+2025-09-23 21:22:45,181 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 513408.crdownload
+2025-09-23 21:22:48,182 - INFO - 処理開始: -ChromeApp_shortcut (9).vbs
+2025-09-23 21:22:48,182 - INFO - マッチするルールがありません: -ChromeApp_shortcut (9).vbs
+2025-09-23 21:23:39,634 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\ca1c7671-70d4-4a2b-b315-a7a0c41503c2.tmp
+2025-09-23 21:23:42,636 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 878852.crdownload
+2025-09-23 21:23:45,637 - INFO - 処理開始: -ChromeApp_shortcut (10).vbs
+2025-09-23 21:23:45,637 - INFO - マッチするルールがありません: -ChromeApp_shortcut (10).vbs
+2025-09-23 21:39:39,917 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\60403d42-16ce-4c9c-9406-673b2e1ef943.tmp
+2025-09-23 21:39:42,918 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 632555.crdownload
+2025-09-23 21:39:45,919 - INFO - 処理開始: -ChromeApp_shortcut (11).vbs
+2025-09-23 21:39:45,919 - INFO - マッチするルールがありません: -ChromeApp_shortcut (11).vbs
+2025-09-23 21:47:50,726 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\97c067a1-13be-4684-a801-93bdc3ffb1ae.tmp
+2025-09-23 21:47:53,727 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 916768.crdownload
+2025-09-23 21:47:56,729 - INFO - 処理開始: -ChromeApp_shortcut (12).vbs
+2025-09-23 21:47:56,729 - INFO - マッチするルールがありません: -ChromeApp_shortcut (12).vbs
+2025-09-23 21:49:11,038 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\b3f2ccc5-0b01-4612-9215-b53dcd5298d3.tmp
+2025-09-23 21:49:14,040 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 9973.crdownload
+2025-09-23 21:49:17,040 - INFO - 処理開始: -枠なし.bat
+2025-09-23 21:49:17,041 - INFO - マッチするルールがありません: -枠なし.bat
+2025-09-23 21:57:00,558 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\a1dd1f7a-14f0-409e-b0c8-88f11c8b4850.tmp
+2025-09-23 21:57:03,560 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 418067.crdownload
+2025-09-23 21:57:06,562 - INFO - 処理開始: -枠なし (1).bat
+2025-09-23 21:57:06,562 - INFO - マッチするルールがありません: -枠なし (1).bat
+2025-09-23 21:59:43,681 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\354635d6-5c4a-40ea-842d-3ecc68c2bef8.tmp
+2025-09-23 21:59:46,682 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 319583.crdownload
+2025-09-23 21:59:49,684 - INFO - 処理開始: -枠なし.bat
+2025-09-23 21:59:49,684 - INFO - マッチするルールがありません: -枠なし.bat
+2025-09-23 22:01:52,013 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\8bbfd64b-ff88-494d-be51-11ec8f69bd27.tmp
+2025-09-23 22:01:55,014 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 21706.crdownload
+2025-09-23 22:01:58,016 - INFO - 処理開始: -枠なし.bat
+2025-09-23 22:01:58,016 - INFO - マッチするルールがありません: -枠なし.bat
+2025-09-23 22:02:26,690 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\1bfb7b90-8603-4108-982c-ec62014a1cdb.tmp
+2025-09-23 22:02:29,691 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 77740.crdownload
+2025-09-23 22:02:32,692 - INFO - 処理開始: -ChromeApp_shortcut.bat
+2025-09-23 22:02:32,692 - INFO - マッチするルールがありません: -ChromeApp_shortcut.bat
+2025-09-23 22:08:32,504 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\2653881d-5232-4b1f-b6d3-8b04cb0776e5.tmp
+2025-09-23 22:08:35,505 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 362719.crdownload
+2025-09-23 22:08:38,506 - INFO - 処理開始: -枠なし (1).bat
+2025-09-23 22:08:38,506 - INFO - マッチするルールがありません: -枠なし (1).bat
+2025-09-23 22:09:12,160 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\a3249b0b-1fa1-4d21-b110-e5ccf778571e.tmp
+2025-09-23 22:09:15,161 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 408645.crdownload
+2025-09-23 22:09:18,163 - INFO - 処理開始: -ChromeApp_shortcut (1).bat
+2025-09-23 22:09:18,163 - INFO - マッチするルールがありません: -ChromeApp_shortcut (1).bat
+2025-09-23 22:10:14,499 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\4de5d3a8-e0d5-4bf5-9200-6b4e14532ea1.tmp
+2025-09-23 22:10:17,500 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 162494.crdownload
+2025-09-23 22:10:20,501 - INFO - 処理開始: 枠なしWEBショートカット作成.html
+2025-09-23 22:10:20,502 - INFO - マッチするルールがありません: 枠なしWEBショートカット作成.html
+2025-09-23 22:10:23,503 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\e1118449-0ecd-468a-9159-2b57c8baa321.tmp
+2025-09-23 22:10:26,504 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 460499.crdownload
+2025-09-23 22:10:29,505 - INFO - 処理開始: 画像ICO変換.html
+2025-09-23 22:10:29,505 - INFO - マッチするルールがありません: 画像ICO変換.html
+2025-09-23 22:10:34,465 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\dfd1317e-8a74-435a-a377-4a3f2176ae52.tmp
+2025-09-23 22:10:37,466 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 574252.crdownload
+2025-09-23 22:10:40,467 - INFO - 処理開始: -ChromeApp_shortcut (7).vbs
+2025-09-23 22:10:40,468 - INFO - マッチするルールがありません: -ChromeApp_shortcut (7).vbs
+2025-09-23 22:25:12,352 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\e600e2ea-a258-4d91-a780-4d8dbb8482c2.tmp
+2025-09-23 22:25:15,353 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 946499.crdownload
+2025-09-23 22:25:18,354 - INFO - 処理開始: ファイルパス取得ヘルパー.bat
+2025-09-23 22:25:18,354 - INFO - マッチするルールがありません: ファイルパス取得ヘルパー.bat
+2025-09-23 22:32:03,116 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\f06631bb-ac92-4e44-ab28-4bcaefcccdd5.tmp
+2025-09-23 22:32:06,117 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 176238.crdownload
+2025-09-23 22:32:09,118 - INFO - 処理開始: ファイルパス取得ヘルパー.bat
+2025-09-23 22:32:09,119 - INFO - マッチするルールがありません: ファイルパス取得ヘルパー.bat
+2025-09-23 22:35:29,823 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\596e4e13-3c15-4c43-b26c-8307a3ff1fbd.tmp
+2025-09-23 22:35:32,824 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 162188.crdownload
+2025-09-23 22:35:35,825 - INFO - 処理開始: ファイルパス取得ヘルパー.bat
+2025-09-23 22:35:35,825 - INFO - マッチするルールがありません: ファイルパス取得ヘルパー.bat
+2025-09-23 22:37:04,453 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\752c0c9a-b146-4ebc-b313-c1555aa32b7c.tmp
+2025-09-23 22:37:07,455 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 855030.crdownload
+2025-09-23 22:37:10,455 - INFO - 処理開始: ファイルパス取得ヘルパー.bat
+2025-09-23 22:37:10,456 - INFO - マッチするルールがありません: ファイルパス取得ヘルパー.bat
+2025-09-23 22:39:21,286 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\9eb11043-232c-411b-9f9a-421603521db4.tmp
+2025-09-23 22:39:24,287 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 938670.crdownload
+2025-09-23 22:39:27,288 - INFO - 処理開始: ファイルパス取得ヘルパー.bat
+2025-09-23 22:39:27,288 - INFO - マッチするルールがありません: ファイルパス取得ヘルパー.bat
+2025-09-23 22:43:42,944 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\0e4ee407-dcf8-4933-99bc-674c9d2bfa7c.tmp
+2025-09-23 22:43:45,945 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 528462.crdownload
+2025-09-23 22:43:48,947 - INFO - 処理開始: 枠なしWEBショートカット作成.html
+2025-09-23 22:43:48,947 - INFO - マッチするルールがありません: 枠なしWEBショートカット作成.html
+2025-09-25 21:25:27,456 - INFO - 処理開始: Qiita.html
+2025-09-25 21:25:27,457 - INFO - マッチするルールがありません: Qiita.html
+2025-09-25 21:25:30,458 - INFO - 処理開始: Qiita.html
+2025-09-25 21:25:30,458 - INFO - マッチするルールがありません: Qiita.html
+2025-09-25 21:38:06,455 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\a31e9217-f1a4-4ec4-ba15-388b70b0f83b.tmp
+2025-09-25 21:38:09,456 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 567514.crdownload
+2025-09-25 21:38:12,457 - INFO - 処理開始: ai_studio_code.html
+2025-09-25 21:38:12,458 - INFO - マッチするルールがありません: ai_studio_code.html
+2025-09-25 21:43:43,725 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\c31061e3-5bab-46c0-ab02-d7e1103c0a11.tmp
+2025-09-25 21:43:46,726 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 482739.crdownload
+2025-09-25 21:43:49,727 - INFO - 処理開始: ai_studio_code (1).html
+2025-09-25 21:43:49,727 - INFO - マッチするルールがありません: ai_studio_code (1).html
+2025-09-25 22:03:48,508 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\95fb0848-8d01-4bdf-a0b3-8f2a4f3ee038.tmp
+2025-09-25 22:03:51,510 - WARNING - ファイルが存在しません: C:\Users\falco\Downloads\未確認 937772.crdownload
+2025-09-25 22:03:54,511 - INFO - 処理開始: chime.wav
+2025-09-25 22:03:54,511 - INFO - マッチするルールがありません: chime.wav

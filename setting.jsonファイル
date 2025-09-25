@@ -1,0 +1,14 @@
+{
+    "window.commandCenter": true,
+    "explorer.confirmDelete": false,
+    "files.autoSave": "onFocusChange",
+    "git.confirmSync": false,
+    "window.customTitleBarVisibility": "windowed",
+    "cursor.composer.textSizeScale": 1.15,
+    "cursor.composer.shouldChimeAfterChatFinishes": true,
+    "audio.cues.enabled": true,
+    "audio.cues.chatResponseReceived": "c:\\sound\\chime.wav",
+    "audio.cues.chatRequestSent": "c:\\sound\\chime.wav",
+    "audio.cues.terminalCommandFailed": "c:\\sound\\chime.wav",
+    "audio.cues.terminalCommandSucceeded": "c:\\sound\\chime.wav"
+}

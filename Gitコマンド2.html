@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gitコマンド完全ガイド - 初心者から上級者まで</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .command-block {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            position: relative;
+            border-left: 4px solid #3b82f6;
+        }
+        .copy-button {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+        .copy-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        }
+        .copy-button.copied {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.95rem;
+            color: #1e293b;
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            line-height: 1.6;
+        }
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+        .input-label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .generate-button {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            margin-bottom: 1rem;
+        }
+        .generate-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        .template-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .template-card {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .template-card:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .template-card.selected {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .template-title {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+        .template-description {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+        .warning-box {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .warning-title {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 0.5rem;
+        }
+        .warning-text {
+            color: #92400e;
+            font-size: 0.875rem;
+        }
+        .hint {
+            background: #eef7ff;
+            border-left: 5px solid #2196F3;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .warning {
+            background: #fff4e5;
+            border-left: 5px solid #ff9800;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .screenshot-container {
+            text-align: center;
+            margin: 2rem 0;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        .screenshot-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .nav-tabs {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 2rem;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px 12px 0 0;
+            padding: 0.5rem;
+            backdrop-filter: blur(10px);
+        }
+        .nav-tab {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.3s ease;
+            background-color: transparent;
+            border-radius: 8px;
+            margin-right: 0.5rem;
+            position: relative;
+        }
+        .nav-tab:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            transform: translateY(-2px);
+        }
+        .nav-tab.active {
+            color: #ffffff;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border-bottom-color: #1d4ed8;
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">Gitコマンド完全ガイド</h1>
+            <p class="text-blue-100 text-lg">初心者から上級者まで、GitとGitHubの操作を完全マスター</p>
+        </header>
+
+        <!-- ナビゲーションタブ -->
+        <div class="nav-tabs">
+            <div class="nav-tab active" onclick="showTab('basics')">基本概念</div>
+            <div class="nav-tab" onclick="showTab('setup')">初期設定</div>
+            <div class="nav-tab" onclick="showTab('workflow')">日常作業</div>
+            <div class="nav-tab" onclick="showTab('generator')">コマンド生成</div>
+            <div class="nav-tab" onclick="showTab('troubleshooting')">トラブル解決</div>
+        </div>
+
+        <!-- 基本概念タブ -->
+        <div id="basics" class="tab-content active">
+            <div class="card">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">1. そもそもGitって？なぜ使うの？</h2>
+                
+                <p class="text-gray-700 mb-6">Gitは、ファイルの変更履歴を記録・管理するツールです。一言で言えば、<strong>コードの「タイムマシン」</strong>のようなもの。これがあれば、いつでも過去の状態に戻したり、複数人で安全に共同作業を進めたりできます。</p>
+
+                <h3 class="text-xl font-semibold mb-4">Gitを理解する2つのカギ</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>用語</th>
+                            <th>説明</th>
+                            <th>イメージ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>ローカルリポジトリ</strong></td>
+                            <td>あなたのPC内にある、Gitが管理するプロジェクトフォルダ。全ての変更履歴がここに保存され、オフラインでも作業できます。</td>
+                            <td>自分の机</td>
+                        </tr>
+                        <tr>
+                            <td><strong>リモートリポジトリ</strong></td>
+                            <td>GitHubなどのオンライン上にある、コードを共有するための「中央保管庫」。ここに変更をアップロード（プッシュ）したり、ダウンロード（プル）したりします。</td>
+                            <td>共有の本棚</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="hint">
+                    <strong>💡ヒント</strong>: このガイドを読めば、Gitの基本からCursorでの具体的な操作、そしてよくあるトラブルの解決策まで、すべて分かります！
+                </div>
+            </div>
+        </div>
+
+        <!-- 初期設定タブ -->
+        <div id="setup" class="tab-content">
+            <div class="card">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">2. 最初の準備：初期設定（初回のみ）</h2>
+                
+                <p class="text-gray-700 mb-6">GitとGitHubが正しく連携できるように、PCごとに一度だけ以下の設定を行います。新しいPCで開発を始めるときの必須作業です。</p>
+
+                <h3 class="text-xl font-semibold mb-4">ステップ 2.1: Gitに自分の名前を教える</h3>
+                <p class="text-gray-700 mb-4"><strong>目的</strong>: あなたが行ったすべての変更（コミット）に、「誰が変更したか」というサインを残すためです。これにより、共同作業時に誰がどのコードを書いたかが一目で分かります。</p>
+                
+                <div class="warning">
+                    <strong>よくあるエラー</strong>: <code>Git の "user.name" と "user.email" を構成していることを確認してください。</code>
+                </div>
+                
+                <p class="text-gray-700 mb-4"><strong>解決策</strong>: Cursorのターミナルで、以下の2つのコマンドを実行してください。一度設定すれば、PCに保存されます。</p>
+                
+                <div class="command-block">
+                    <button class="copy-button" onclick="copyToClipboard(this)">コピー</button>
+                    <pre>git config --global user.name "あなたのGitHubユーザー名"
+git config --global user.email "あなたのGitHub登録メールアドレス"</pre>
+                </div>
+
+                <div class="hint">
+                    <strong>💡ヒント</strong>: <code>--global</code> は、このPCで行うすべてのGit作業にこの設定を適用するという意味です。
+                </div>
+
+                <h3 class="text-xl font-semibold mb-4 mt-8">ステップ 2.2: PCとGitHubを紐づける</h3>
+                <p class="text-gray-700 mb-4"><strong>目的</strong>: あなたのPC（ローカルリポジトリ）が、どのGitHubリポジトリ（リモートリポジトリ）とデータをやり取りするのかをGitに教えるためです。この紐付けがないと、変更のアップロードやダウンロードができません。</p>
+                
+                <div class="warning">
+                    <strong>よくあるエラー</strong>: <code>fatal: 'origin' does not appear to be a git repository</code>
+                </div>
+                
+                <p class="text-gray-700 mb-4"><strong>解決策</strong>:</p>
+                <ol class="list-decimal list-inside text-gray-700 mb-4">
+                    <li>GitHubで、対象のリポジトリページを開きます。</li>
+                    <li>緑色の <code>Code</code> ボタンをクリックし、HTTPSタブに表示されるURLをコピーします。</li>
+                    <li>Cursorのターミナルで以下のコマンドを実行します。</li>
+                </ol>
+                
+                <div class="command-block">
+                    <button class="copy-button" onclick="copyToClipboard(this)">コピー</button>
+                    <pre>git remote add origin &lt;GitHubでコピーしたURL&gt;</pre>
+                </div>
+
+                <div class="hint">
+                    <strong>💡ヒント</strong>: <code>origin</code> は、紐付けたリモートリポジトリを指すためのニックネームのようなものです。一般的にこの名前が使われます。
+                </div>
+            </div>
+        </div>
+
+        <!-- 日常作業タブ -->
+        <div id="workflow" class="tab-content">
+            <div class="card">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">3. 日常の作業サイクル：変更を記録し、共有する</h2>
+                <p class="text-gray-700 mb-6">日々のコーディング作業で、Gitをどのように活用するかをCursorの便利なGUI（グラフィカル・ユーザー・インターフェース）操作で見ていきましょう。</p>
+
+                <h3 class="text-xl font-semibold mb-4">ステップ 3.1: 変更を記録する（ステージング → コミット）</h3>
+                
+                <p class="text-gray-700 mb-4"><strong>1. ステージング：記録する変更を選ぶ</strong><br>
+                「ステージング」とは、変更したファイルの中から、一つのまとまりとして記録（コミット）したいものだけを選ぶ準備作業です。</p>
+                <ul class="list-disc list-inside text-gray-700 mb-4">
+                    <li>Cursorの左サイドバーにあるソース管理アイコン（分岐マーク）をクリックします。</li>
+                    <li>変更したファイルの一覧が表示されます。記録したいファイルの横にある <code>+</code> ボタンを押して、「ステージされている変更」エリアに移動させます。</li>
+                </ul>
+
+                <p class="text-gray-700 mb-4"><strong>2. コミット：変更にメッセージを付けて記録する</strong><br>
+                「コミット」は、ステージングした変更をローカルリポジトリの歴史に刻む作業です。</p>
+                <ul class="list-disc list-inside text-gray-700 mb-4">
+                    <li>上部のメッセージボックスに、<strong>「何のために、何をどう変更したか」</strong>が簡潔にわかるメッセージを入力します。（例：「ログイン機能のバグを修正」）</li>
+                    <li><code>コミット</code> ボタンをクリックします。これで、あなたのPCに変更履歴の「セーブポイント」が作成されました。</li>
+                </ul>
+
+                <h3 class="text-xl font-semibold mb-4 mt-8">ステップ 3.2: 変更を共有する（プッシュ ＆ プル）</h3>
+                <p class="text-gray-700 mb-4">ローカルリポジトリ（あなたのPC）とリモートリポジトリ（GitHub）の状態を常に最新に保つことが、スムーズな開発の秘訣です。</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>操作</th>
+                            <th>説明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>プッシュ (Push)</strong></td>
+                            <td>ローカルでコミットした変更を、GitHubにアップロードします。</td>
+                        </tr>
+                        <tr>
+                            <td><strong>プル (Pull)</strong></td>
+                            <td>他の人がGitHubにアップロードした最新の変更を、自分のPCにダウンロードします。</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p class="text-gray-700 mb-4"><strong>一番簡単な方法：同期ボタンを使おう！</strong><br>
+                Cursorの画面下にあるステータスバーの雲のアイコンか、ソース管理パネル上部にある更新アイコンをクリックします。このボタン一つで、<strong>プルとプッシュを賢く同時に実行</strong>してくれます。</p>
+
+                <!-- CursorでのGit操作画面の説明 -->
+                <div class="screenshot-container">
+                    <h4 class="text-lg font-semibold mb-4">CursorでのGit操作画面の実際の使い方</h4>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                        <h5 class="font-semibold text-gray-800 mb-2">📁 ソース管理パネルの構成要素</h5>
+                        <ul class="list-disc list-inside text-gray-700 space-y-1">
+                            <li><strong>変更されたファイル</strong>: 編集したファイルが一覧表示される</li>
+                            <li><strong>ステージされた変更</strong>: コミット準備ができたファイル</li>
+                            <li><strong>メッセージ入力欄</strong>: コミットメッセージを記入</li>
+                            <li><strong>コミットボタン</strong>: 変更をローカルリポジトリに記録</li>
+                            <li><strong>同期ボタン</strong>: GitHubとの同期（プッシュ・プル）</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                        <h5 class="font-semibold text-blue-800 mb-2">🔄 実際の操作手順</h5>
+                        <ol class="list-decimal list-inside text-blue-700 space-y-2">
+                            <li><strong>ファイルを編集</strong>: コードを変更すると、ファイル名が「変更」セクションに表示される</li>
+                            <li><strong>ステージング</strong>: ファイル名の横の「+」ボタンをクリックして「ステージされた変更」に移動</li>
+                            <li><strong>コミットメッセージ入力</strong>: 「何を変更したか」を簡潔に記述</li>
+                            <li><strong>コミット実行</strong>: 「コミット」ボタンでローカルに変更を記録</li>
+                            <li><strong>GitHubに同期</strong>: 「同期」ボタンでリモートリポジトリにアップロード</li>
+                        </ol>
+                    </div>
+
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <h5 class="font-semibold text-green-800 mb-2">💡 実践的なTips</h5>
+                        <ul class="list-disc list-inside text-green-700 space-y-1">
+                            <li>コミットメッセージは「動詞 + 目的語」で書く（例：「ログイン機能を修正」）</li>
+                            <li>関連する変更はまとめて1つのコミットにする</li>
+                            <li>作業前に必ず「同期」して最新状態を確認</li>
+                            <li>エラーが出た場合は、ターミナルで詳細を確認</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- コマンド生成タブ -->
+        <div id="generator" class="tab-content">
+            <div class="card">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">GitHubコマンド生成ツール</h2>
+                <p class="text-gray-700 mb-6">リポジトリ名とユーザー名を入力して、カスタムGitコマンドを生成しましょう</p>
+                
+                <div class="input-group">
+                    <label class="input-label" for="username">GitHubユーザー名</label>
+                    <input type="text" id="username" class="input-field" placeholder="例: poyoyon-ceee" value="poyoyon-ceee">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label" for="repository">リポジトリ名</label>
+                    <input type="text" id="repository" class="input-field" placeholder="例: my-new-app">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">コマンドテンプレートを選択</label>
+                    <div class="template-selector">
+                        <div class="template-card selected" data-template="new-repo">
+                            <div class="template-title">新規リポジトリ作成</div>
+                            <div class="template-description">新しいリポジトリを作成してプッシュ</div>
+                        </div>
+                        <div class="template-card" data-template="clone-repo">
+                            <div class="template-title">リポジトリクローン</div>
+                            <div class="template-description">既存のリポジトリをクローン</div>
+                        </div>
+                        <div class="template-card" data-template="force-reset">
+                            <div class="template-title">強制リセット</div>
+                            <div class="template-description">リモートに強制的に合わせる</div>
+                        </div>
+                        <div class="template-card" data-template="branch-operations">
+                            <div class="template-title">ブランチ操作</div>
+                            <div class="template-description">ブランチの作成・切り替え・マージ</div>
+                        </div>
+                        <div class="template-card" data-template="pull-request">
+                            <div class="template-title">プルリクエスト</div>
+                            <div class="template-description">プルリクエスト用のブランチ操作</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="generate-button" onclick="generateCommand()">コマンドを生成</button>
+            </div>
+
+            <!-- 生成されたコマンド表示 -->
+            <div class="card" id="command-result" style="display: none;">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">生成されたコマンド</h2>
+                <div id="command-content"></div>
+            </div>
+
+            <!-- GitとGitHubの関係性説明 -->
+            <div class="card">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">GitとGitHubの関係性</h2>
+                <div class="prose max-w-none text-gray-700">
+                    <p>Gitは、あなたのPC上で動作する<strong>バージョン管理ツール</strong>です。一方、GitHubは、インターネット上の<strong>リポジトリホスティングサービス</strong>です。この2つは役割が異なります。</p>
+                    
+                    <h3 class="text-xl font-semibold mt-6 mb-3">なぜGitHubに先にリポジトリを作成するのか？</h3>
+                    <p>ローカルで<code>git init</code>を実行すると、あなたのPC内に隠しフォルダ（.git）が作成され、ファイルの変更履歴が記録され始めます。しかし、この時点ではまだGitHubとは一切関係がありません。</p>
+                    <p><code>git remote add origin</code>コマンドは、<strong>「ローカルの.gitフォルダを、GitHubのこのURLと紐づけますよ」</strong>と設定するために使います。したがって、紐づけ先のGitHubリポジトリが事前に存在している必要があります。</p>
+                    <p>たとえるなら、GitHubに<strong>「ファイルの保管場所」</strong>を事前に用意しておき、ローカルからその場所にファイルを送り届ける、というイメージです。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- トラブル解決タブ -->
+        <div id="troubleshooting" class="tab-content">
+            <div class="card">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">4. 困ったときは：よくあるトラブル解決集</h2>
+                <p class="text-gray-700 mb-6">Git初心者が遭遇しやすいエラーとその解決策をまとめました。焦らず、原因と対処法を確認しましょう。</p>
+
+                <h3 class="text-xl font-semibold mb-4">トラブル 4.1: プッシュが拒否される！</h3>
+                <div class="warning">
+                    <strong>エラーメッセージ</strong>:<br>
+                    <code>! [rejected], non-fast-forward<br>
+                    hint: Updates were rejected because the remote contains work that you do not have locally.</code>
+                </div>
+                <ul class="list-disc list-inside text-gray-700 mb-4">
+                    <li><strong>原因</strong>: あなたが知らないうちに、他の誰かがGitHubに変更をプッシュしました。あなたのPCの状態が古くなっているため、Gitが「他人の変更を上書きしてしまう危険がある」と判断し、プッシュを止めてくれています。</li>
+                    <li><strong>対処法</strong>:
+                        <ol class="list-decimal list-inside ml-4">
+                            <li>まずGitHubの最新の変更をプル（ダウンロード）します。</li>
+                            <li>その後、改めてプッシュします。</li>
+                        </ol>
+                    </li>
+                </ul>
+                
+                <div class="command-block">
+                    <button class="copy-button" onclick="copyToClipboard(this)">コピー</button>
+                    <pre>git pull origin main
+git push origin main</pre>
+                </div>
+
+                <h3 class="text-xl font-semibold mb-4 mt-8">トラブル 4.2: プルしようとすると「無関係な歴史」と言われる！</h3>
+                <div class="warning">
+                    <strong>エラーメッセージ</strong>: <code>fatal: refusing to merge unrelated histories</code>
+                </div>
+                <ul class="list-disc list-inside text-gray-700 mb-4">
+                    <li><strong>原因</strong>: ローカルとリモートのリポジトリが、それぞれ別々に作られてしまい、共通の歴史（コミット）を持っていない状態です。</li>
+                    <li><strong>対処法</strong>: 以下のコマンドで、2つの異なる歴史を強制的に関連付けて統合します。</li>
+                </ul>
+                
+                <div class="command-block">
+                    <button class="copy-button" onclick="copyToClipboard(this)">コピー</button>
+                    <pre>git pull origin main --allow-unrelated-histories</pre>
+                </div>
+
+                <div class="warning">
+                    <strong>⚠️注意</strong>: このコマンドは強力ですが、意図しないファイルのマージが発生する可能性もあります。通常はプロジェクトの最初に一度だけ使います。
+                </div>
+
+                <h3 class="text-xl font-semibold mb-4 mt-8">トラブル 4.3: ファイルが「コンフリクト（競合）」した！</h3>
+                <div class="warning">
+                    <strong>エラーメッセージ</strong>: <code>CONFLICT (add/add), Automatic merge failed; fix conflicts and then commit the result.</code>
+                </div>
+                <ul class="list-disc list-inside text-gray-700 mb-4">
+                    <li><strong>原因</strong>: あなたと他の人が、同じファイルの同じ部分を同時に変更してしまいました。Gitがどちらの変更を優先すべきか自動で判断できない状態です。</li>
+                    <li><strong>対処法</strong>: 手動で正しいコードを選び、Gitに教えてあげる必要があります。
+                        <ol class="list-decimal list-inside ml-4">
+                            <li>コンフリクトが起きているファイルをCursorで開きます。<code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code>, <code>=======</code>, <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code> という特殊なマーカーで競合箇所が示されています。</li>
+                            <li>Cursorのエディタ上に表示される <code>Accept Current Change</code>（自分の変更を採用）や <code>Accept Incoming Change</code>（相手の変更を採用）などのボタンを使い、残したいコードを選択します。もしくは、マーカーごと手動でコードを編集して、最終的に正しい形にします。</li>
+                            <li>ファイルを保存した後、以下のコマンドで解決したことをGitに伝えます。</li>
+                        </ol>
+                    </li>
+                </ul>
+                
+                <div class="command-block">
+                    <button class="copy-button" onclick="copyToClipboard(this)">コピー</button>
+                    <pre># 1. 解決したファイルをステージング
+git add .
+# 2. 解決したことをコミット
+git commit -m "マージコンフリクトを解決"
+# 3. GitHubにプッシュ
+git push origin main</pre>
+                </div>
+
+                <div class="warning">
+                    <strong>🚫最終手段</strong>: どうしても解決できない場合、<code>git merge --abort</code>でマージを中止し、<code>git push -f origin main</code>で強制的に自分の変更を上書きできます。しかし、<strong>他人の変更を消してしまう危険な操作</strong>なので、実行する前に必ずチームに相談してください。
+                </div>
+
+                <h3 class="text-xl font-semibold mb-4 mt-8">🚨 トラブル 4.4: 特殊な操作：コミット履歴をすべて消去する（危険）</h3>
+                <div class="warning">
+                    <strong>⚠️ 重要警告</strong>: この操作は<strong>すべてのコミット履歴を完全に消去</strong>します。実行前に必ずバックアップを作成し、チームメンバーと相談してください。
+                </div>
+                
+                <p class="text-gray-700 mb-4"><strong>目的</strong>: プロジェクトの過去のコミット履歴をすべて消し去り、現在の状態だけを「最初のコミット」として残す特殊なコマンドです。主に以下のような場合に使用されます：</p>
+                <ul class="list-disc list-inside text-gray-700 mb-4">
+                    <li>大きなファイルや機密情報が履歴に含まれてしまった場合</li>
+                    <li>プロジェクトを完全にリセットしたい場合</li>
+                    <li>履歴をクリーンにしたい場合</li>
+                </ul>
+                
+                <div class="command-block">
+                    <button class="copy-button" onclick="copyToClipboard(this)">コピー</button>
+                    <pre>git checkout --orphan tmp
+git commit -m "Initial Commit"
+git checkout -B main
+git branch -d tmp</pre>
+                </div>
+
+                <div class="bg-red-50 p-4 rounded-lg mb-4">
+                    <h5 class="font-semibold text-red-800 mb-2">🔍 コマンド解説</h5>
+                    <ul class="list-disc list-inside text-red-700 space-y-1">
+                        <li><strong><code>git checkout --orphan tmp</code></strong>: 親を持たない、完全に独立したブランチを作成</li>
+                        <li><strong><code>git commit -m "Initial Commit"</code></strong>: 最初のコミットを作成</li>
+                        <li><strong><code>git checkout -B main</code></strong>: 古いmainブランチを強制的に上書き</li>
+                        <li><strong><code>git branch -d tmp</code></strong>: 作業用ブランチを削除</li>
+                    </ul>
+                </div>
+
+                <div class="bg-red-100 border border-red-300 rounded-lg p-4">
+                    <h5 class="font-semibold text-red-800 mb-2">🚨 実行前のチェックリスト</h5>
+                    <ul class="list-disc list-inside text-red-700 space-y-1">
+                        <li>✅ 現在のコードが正常に動作することを確認</li>
+                        <li>✅ 重要なファイルがすべて含まれていることを確認</li>
+                        <li>✅ チームメンバー全員に事前通知</li>
+                        <li>✅ リモートリポジトリのバックアップを作成</li>
+                        <li>✅ 実行後に<code>git push -f origin main</code>で強制プッシュが必要</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // テンプレート選択の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            const templateCards = document.querySelectorAll('.template-card');
+            templateCards[0].classList.add('selected'); // デフォルトで新規リポジトリ作成を選択
+            
+            templateCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    templateCards.forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+        });
+
+        // タブ切り替え機能
+        function showTab(tabName) {
+            // すべてのタブコンテンツを非表示
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // すべてのタブを非アクティブに
+            const tabs = document.querySelectorAll('.nav-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // 選択されたタブとコンテンツをアクティブに
+            document.getElementById(tabName).classList.add('active');
+            
+            // クリックされたタブをアクティブに
+            const clickedTab = event.target;
+            clickedTab.classList.add('active');
+        }
+
+        // コマンドテンプレートの定義
+        const templates = {
+            'new-repo': {
+                title: '新しいリポジトリを作成してプッシュする',
+                description: 'PC1で新しいプロジェクトを始める際の手順です。ローカルに新しいGitリポジトリを作成し、GitHubにアップロードします。',
+                command: `# 必ずGitHubに先にリポジトリを作成してください！
+# GitHub.com → New Repository → リポジトリ名を入力 → Create repository
+
+git init
+git remote add origin https://github.com/{username}/{repository}.git
+echo "# {repository}" > README.md
+git add .
+git commit -m "初回コミット"
+git branch -M main
+git push -u origin main`,
+                warning: '⚠️ 重要: このコマンドを実行する前に、必ずGitHub上でリポジトリを作成してください。GitHubでリポジトリを作成していないと「remote origin already exists」エラーが発生します。'
+            },
+            'clone-repo': {
+                title: '既存のリポジトリをクローンする',
+                description: 'PC2など、別の環境に既存のGitHubリポジトリを丸ごとコピーしたい場合の手順です。',
+                command: `git clone https://github.com/{username}/{repository}.git`
+            },
+            'force-reset': {
+                title: '強制的にリモートを反映するコマンド（注意）',
+                description: 'このコマンドは、あなたのローカルでのすべての変更を破棄し、GitHubの最新の状態に強制的に合わせるためのものです。',
+                command: `git fetch origin
+git reset --hard origin/main
+git clean -fd`,
+                warning: 'ローカルの未コミットの変更や、まだプッシュしていないコミットはすべて消去されます。緊急時や、ローカルの状態が壊れてしまった場合にのみ使用してください。'
+            },
+            'branch-operations': {
+                title: 'ブランチ操作コマンド',
+                description: 'ブランチの作成、切り替え、マージなどの基本的なブランチ操作です。',
+                command: `# 新しいブランチを作成して切り替え
+git checkout -b feature/new-feature
+
+# ブランチを切り替え
+git checkout main
+
+# ブランチをマージ
+git merge feature/new-feature
+
+# ブランチを削除
+git branch -d feature/new-feature
+
+# リモートブランチを削除
+git push origin --delete feature/new-feature`
+            },
+            'pull-request': {
+                title: 'プルリクエスト用のブランチ操作',
+                description: 'プルリクエストを作成するための基本的なワークフローです。',
+                command: `# 最新のmainブランチを取得
+git checkout main
+git pull origin main
+
+# 新しいブランチを作成
+git checkout -b feature/your-feature-name
+
+# 変更をコミット
+git add .
+git commit -m "feat: 新しい機能を追加"
+
+# ブランチをプッシュ
+git push origin feature/your-feature-name
+
+# GitHubでプルリクエストを作成後、ローカルのブランチを削除
+git checkout main
+git branch -d feature/your-feature-name`
+            }
+        };
+
+        function generateCommand() {
+            const username = document.getElementById('username').value.trim();
+            const repository = document.getElementById('repository').value.trim();
+            const selectedTemplate = document.querySelector('.template-card.selected').dataset.template;
+            
+            if (!username || !repository) {
+                alert('GitHubユーザー名とリポジトリ名を入力してください。');
+                return;
+            }
+            
+            const template = templates[selectedTemplate];
+            if (!template) {
+                alert('テンプレートが見つかりません。');
+                return;
+            }
+            
+            // プレースホルダーを置換
+            const command = template.command.replace(/{username}/g, username).replace(/{repository}/g, repository);
+            
+            // 結果を表示
+            const resultDiv = document.getElementById('command-result');
+            const contentDiv = document.getElementById('command-content');
+            
+            let html = `
+                <h3 class="text-xl font-semibold mb-2">${template.title}</h3>
+                <p class="text-gray-700 mb-4">${template.description}</p>
+            `;
+            
+            if (template.warning) {
+                html += `
+                    <div class="warning-box">
+                        <div class="warning-title">⚠ 注意</div>
+                        <div class="warning-text">${template.warning}</div>
+                    </div>
+                `;
+            }
+            
+            html += `
+                <div class="command-block">
+                    <button class="copy-button" onclick="copyToClipboard(this)">コピー</button>
+                    <pre>${command}</pre>
+                </div>
+            `;
+            
+            contentDiv.innerHTML = html;
+            resultDiv.style.display = 'block';
+            
+            // 結果までスクロール
+            resultDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function copyToClipboard(button) {
+            const pre = button.nextElementSibling;
+            const command = pre.textContent;
+
+            navigator.clipboard.writeText(command).then(() => {
+                button.textContent = 'コピーしました！';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = 'コピー';
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(() => {
+                // フォールバック
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = command;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempTextArea);
+                
+                button.textContent = 'コピーしました！';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = 'コピー';
+                    button.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        // Enterキーでコマンド生成
+        document.getElementById('username').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                generateCommand();
+            }
+        });
+        
+        document.getElementById('repository').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                generateCommand();
+            }
+        });
+    </script>
+</body>
+</html>
