@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>オフラインTODOリスト</title>
+    <style>
+        /* リセットCSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'BIZ UDPGothic', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
+            color: #2c3e50;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+        .container {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            width: 100%;
+            max-width: 800px;
+            min-width: 350px;
+            min-height: 600px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background-color: #34495e;
+            color: #ffffff;
+            padding: 20px 30px;
+            border-bottom: 1px solid #2c3e50;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .input-section {
+            padding: 30px;
+            background-color: #fafafa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            min-width: 0;
+        }
+
+        .input-container input {
+            flex: 1;
+            min-width: 0;
+            padding: 12px 16px;
+            border: 1px solid #bdc3c7;
+            background-color: #ffffff;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .input-container input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .input-container button {
+            padding: 12px 24px;
+            background-color: #2c3e50;
+            color: #ffffff;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-weight: 500;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .input-container button:hover {
+            background-color: #34495e;
+        }
+
+        .task-list-container {
+            padding: 20px 30px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .task-list {
+            list-style: none;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid #ecf0f1;
+            transition: background-color 0.2s;
+            cursor: grab;
+            position: relative;
+            min-width: 0;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .task-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .task-item.dragging {
+            opacity: 0.5;
+        }
+
+        .task-item.drag-over {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+        }
+
+        .priority-indicator {
+            width: 8px;
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        .priority-high {
+            background-color: #e74c3c;
+        }
+
+        .priority-medium {
+            background-color: #3498db;
+        }
+
+        .priority-none {
+            background-color: #c6c7c7;
+        }
+
+        .task-checkbox {
+            width: 18px;
+            height: 18px;
+            margin-right: 16px;
+            margin-left: 8px;
+            cursor: pointer;
+            accent-color: #2c3e50;
+        }
+
+        .task-text {
+            flex: 1;
+            font-size: 16px;
+            font-weight: 400;
+            color: #2c3e50;
+            
+            /* 既存の改行設定を無効化 */
+            word-wrap: normal;
+            word-break: normal;
+            white-space: nowrap;
+            overflow-wrap: normal;
+            
+            /* 1行表示の設定 */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+            max-width: calc(100% - 160px);
+        }
+
+        .task-item.completed .task-text {
+            color: #95a5a6;
+            text-decoration: line-through;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .priority-controls {
+            display: flex;
+            gap: 4px;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .priority-btn {
+            padding: 4px 8px;
+            border: 1px solid #bdc3c7;
+            background-color: #ffffff;
+            color: #7f8c8d;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .priority-btn:hover {
+            background-color: #ecf0f1;
+        }
+
+        .priority-btn.selected {
+            color: #ffffff;
+            border-color: transparent;
+        }
+
+        .priority-btn.high.selected {
+            background-color: #e74c3c;
+        }
+
+        .priority-btn.medium.selected {
+            background-color: #3498db;
+        }
+
+        .priority-btn.none.selected {
+            background-color: #bec0c0;
+            color: #ffffff;
+        }
+
+        .delete-btn {
+            padding: 6px 12px;
+            background-color: #e74c3c;
+            color: #ffffff;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7f8c8d;
+            font-size: 18px;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* スクロールバーのスタイル */
+        .task-list-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .task-list-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .task-list-container::-webkit-scrollbar-thumb {
+            background: #bdc3c7;
+        }
+
+        .task-list-container::-webkit-scrollbar-thumb:hover {
+            background: #95a5a6;
+        }
+
+        /* レスポンシブデザイン - 統一版 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                max-width: 100%;
+                min-width: 280px;
+            }
+
+            .header {
+                padding: 15px 20px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .input-section {
+                padding: 20px;
+            }
+
+            .input-container {
+                flex-direction: row;
+                gap: 8px;
+            }
+
+            .input-container input {
+                min-width: 0;
+            }
+
+            .input-container button {
+                flex-shrink: 0;
+                padding: 12px 16px;
+            }
+
+            .task-list-container {
+                padding: 15px 20px;
+            }
+
+            .task-item {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .task-text {
+                max-width: calc(100% - 110px);
+            }
+
+            .priority-controls {
+                margin-right: 0;
+                order: 3;
+                flex-basis: auto;
+                justify-content: flex-start;
+            }
+
+            .delete-btn {
+                order: 4;
+                margin-left: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>TODO MANAGEMENT　<span id="currentDate"></span></h1>
+            <div style="position: absolute; top: 15px; right: 20px; display: flex; gap: 5px; align-items: center;">
+                <input type="file" id="fileInput" accept=".csv" style="display: none;">
+                <button id="uploadBtn" style="background: none; border: 1px solid #555; color: #bdc3c7; padding: 2px 6px; font-size: 10px; cursor: pointer;">読込</button>
+                <button id="downloadBtn" style="background: none; border: 1px solid #555; color: #bdc3c7; padding: 2px 6px; font-size: 10px; cursor: pointer; margin-right: 8px;">CSV</button>
+                <span style="font-size: 11px; color: #95a5a6; margin-right: 5px;">A</span>
+                <button id="fontSizeBtn" style="background: none; border: 1px solid #555; color: #bdc3c7; padding: 2px 6px; font-size: 10px; cursor: pointer;">標準</button>
+                <button id="fontWeightBtn" style="background: none; border: 1px solid #555; color: #bdc3c7; padding: 2px 6px; font-size: 10px; cursor: pointer;">通常</button>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <div class="input-container">
+                <input
+                    type="text"
+                    id="newTaskInput"
+                    placeholder="新しいタスクを入力..."
+                />
+                <button id="addTaskButton">追加</button>
+            </div>
+        </div>
+
+        <div class="task-list-container">
+            <ul id="taskList" class="task-list">
+                <!-- タスクはここに動的に追加されます -->
+            </ul>
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">📋</div>
+                <div>タスクがありません</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM要素の取得
+        const newTaskInput = document.getElementById('newTaskInput');
+        const addTaskButton = document.getElementById('addTaskButton');
+        const taskList = document.getElementById('taskList');
+        const emptyState = document.getElementById('emptyState');
+        const fontSizeBtn = document.getElementById('fontSizeBtn');
+        const fontWeightBtn = document.getElementById('fontWeightBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileInput = document.getElementById('fileInput');
+
+        // To-Doリストのデータを管理する配列
+        let tasks = [];
+        let draggedItemIndex = null; // ドラッグ中のタスクのインデックスを保持
+        let draggedOverItemIndex = null; // ドラッグオーバー中のタスクのインデックス
+        
+        // フォント設定
+        let fontSize = 'normal'; // normal, large, small
+        let fontWeight = 'normal'; // normal, bold
+
+        /**
+         * 現在の日付を表示する
+         * @returns {void}
+         */
+        function displayCurrentDate() {
+            const today = new Date();
+            const month = today.getMonth() + 1;
+            const date = today.getDate();
+            const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][today.getDay()];
+            
+            const dateString = `${month}月${date}日（${dayOfWeek}）`;
+            document.getElementById('currentDate').textContent = dateString;
+        }
+
+        /**
+         * localStorageからタスクを読み込む
+         * @returns {void}
+         */
+        function loadTasks() {
+            const storedTasks = localStorage.getItem('todoTasks');
+            if (storedTasks) {
+                tasks = JSON.parse(storedTasks);
+            }
+            
+            // フォント設定を読み込む
+            const storedFontSize = localStorage.getItem('todoFontSize');
+            if (storedFontSize) {
+                fontSize = storedFontSize;
+                updateFontSizeButton();
+            }
+            
+            const storedFontWeight = localStorage.getItem('todoFontWeight');
+            if (storedFontWeight) {
+                fontWeight = storedFontWeight;
+                updateFontWeightButton();
+            }
+            
+            renderTasks();
+        }
+
+        /**
+         * タスクをlocalStorageに保存する
+         * @returns {void}
+         */
+        function saveTasks() {
+            localStorage.setItem('todoTasks', JSON.stringify(tasks));
+        }
+
+        /**
+         * フォント設定をlocalStorageに保存する
+         * @returns {void}
+         */
+        function saveFontSettings() {
+            localStorage.setItem('todoFontSize', fontSize);
+            localStorage.setItem('todoFontWeight', fontWeight);
+        }
+
+        /**
+         * タスクリストをDOMにレンダリングする
+         * @returns {void}
+         */
+        function renderTasks() {
+            taskList.innerHTML = ''; // 現在のリストをクリア
+
+            if (tasks.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            } else {
+                emptyState.style.display = 'none';
+            }
+
+            // 各タスクをループ処理してDOM要素を作成
+            tasks.forEach((task, index) => {
+                const listItem = document.createElement('li');
+                listItem.className = `task-item ${task.completed ? 'completed' : ''}`;
+                listItem.dataset.index = index; // タスクのインデックスをデータ属性として保存
+                listItem.draggable = true; // ドラッグ可能にする
+
+                // ドラッグイベントリスナーを追加
+                listItem.addEventListener('dragstart', handleDragStart);
+                listItem.addEventListener('dragover', handleDragOver);
+                listItem.addEventListener('dragleave', handleDragLeave);
+                listItem.addEventListener('drop', handleDrop);
+                listItem.addEventListener('dragend', handleDragEnd);
+
+                // 優先度インジケーター
+                const priorityIndicator = document.createElement('div');
+                const indicatorPriority = (task.priority === 'low') ? 'none' : task.priority;
+                priorityIndicator.className = `priority-indicator priority-${indicatorPriority}`;
+
+                // チェックボックスの作成
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = task.completed;
+                checkbox.className = 'task-checkbox';
+                checkbox.addEventListener('change', toggleTaskCompletion);
+
+                // タスクテキストの作成
+                const taskText = document.createElement('span');
+                taskText.textContent = task.text;
+                taskText.className = 'task-text';
+                taskText.addEventListener('dblclick', (e) => editTask(e, index));
+                
+                // フォント設定を適用
+                if (fontSize === 'large') {
+                    taskText.style.fontSize = '18px';
+                } else if (fontSize === 'small') {
+                    taskText.style.fontSize = '14px';
+                } else {
+                    taskText.style.fontSize = '16px';
+                }
+                
+                if (fontWeight === 'bold') {
+                    taskText.style.fontWeight = '600';
+                } else {
+                    taskText.style.fontWeight = '400';
+                }
+
+                // 優先度ボタンコンテナ
+                const priorityButtonsContainer = document.createElement('div');
+                priorityButtonsContainer.className = 'priority-controls';
+
+                const priorities = [
+                    { value: 'high', text: '高', class: 'high' },
+                    { value: 'medium', text: '中', class: 'medium' },
+                    { value: 'none', text: 'なし', class: 'none' }
+                ];
+
+                priorities.forEach(p => {
+                    const button = document.createElement('button');
+                    button.textContent = p.text;
+                    const isSelected = task.priority === p.value || 
+                                     (p.value === 'none' && (task.priority === 'low'));
+                    button.className = `priority-btn ${p.class} ${isSelected ? 'selected' : ''}`;
+                    button.dataset.priority = p.value;
+                    button.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        setTaskPriority(index, p.value);
+                    });
+                    priorityButtonsContainer.appendChild(button);
+                });
+
+                // 削除ボタンの作成
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = '削除';
+                deleteButton.className = 'delete-btn';
+                deleteButton.addEventListener('click', deleteTask);
+
+                // 要素をリストアイテムに追加
+                listItem.appendChild(priorityIndicator);
+                listItem.appendChild(checkbox);
+                listItem.appendChild(taskText);
+                listItem.appendChild(priorityButtonsContainer);
+                listItem.appendChild(deleteButton);
+                taskList.appendChild(listItem);
+            });
+        }
+
+        /**
+         * 新しいタスクを追加する
+         * @returns {void}
+         */
+        function addTask() {
+            const taskText = newTaskInput.value.trim();
+
+            if (taskText !== '') {
+                tasks.push({ text: taskText, completed: false, priority: 'none' });
+                newTaskInput.value = '';
+                saveTasks();
+                renderTasks();
+            }
+        }
+
+        /**
+         * タスクの完了状態を切り替える
+         * @param {Event} event - チェックボックスのchangeイベント
+         * @returns {void}
+         */
+        function toggleTaskCompletion(event) {
+            const listItem = event.target.closest('.task-item');
+            const index = parseInt(listItem.dataset.index);
+
+            tasks[index].completed = !tasks[index].completed;
+            saveTasks();
+            renderTasks();
+        }
+
+        /**
+         * タスクの優先度を設定する
+         * @param {number} index - タスクのインデックス
+         * @param {string} priority - 設定する優先度の値
+         * @returns {void}
+         */
+        function setTaskPriority(index, priority) {
+            if (tasks[index]) {
+                tasks[index].priority = priority;
+                saveTasks();
+                renderTasks();
+            }
+        }
+
+        /**
+         * タスクを削除する
+         * @param {Event} event - 削除ボタンのclickイベント
+         * @returns {void}
+         */
+        function deleteTask(event) {
+            const listItem = event.target.closest('.task-item');
+            const index = parseInt(listItem.dataset.index);
+
+            tasks.splice(index, 1);
+            saveTasks();
+            renderTasks();
+        }
+
+        // --- ドラッグ＆ドロップ関連の関数 ---
+
+        /**
+         * ドラッグ開始時の処理
+         * @param {DragEvent} e
+         * @returns {void}
+         */
+        function handleDragStart(e) {
+            draggedItemIndex = parseInt(e.currentTarget.dataset.index);
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', draggedItemIndex.toString());
+            
+            // ドラッグ中のスタイルを適用
+            e.currentTarget.classList.add('dragging');
+            
+            console.log('Drag started:', draggedItemIndex);
+        }
+
+        /**
+         * ドラッグ要素がターゲットの上にあるときの処理
+         * @param {DragEvent} e
+         * @returns {void}
+         */
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const targetItem = e.currentTarget;
+            const targetIndex = parseInt(targetItem.dataset.index);
+            
+            if (targetIndex !== draggedItemIndex) {
+                // 前のドラッグオーバーをクリア
+                if (draggedOverItemIndex !== null && draggedOverItemIndex !== targetIndex) {
+                    const prevItem = document.querySelector(`[data-index="${draggedOverItemIndex}"]`);
+                    if (prevItem) prevItem.classList.remove('drag-over');
+                }
+                
+                // 新しいドラッグオーバーを設定
+                targetItem.classList.add('drag-over');
+                draggedOverItemIndex = targetIndex;
+            }
+        }
+
+        /**
+         * ドラッグ要素がターゲットから離れたときの処理
+         * @param {DragEvent} e
+         * @returns {void}
+         */
+        function handleDragLeave(e) {
+            // ドラッグが完全に要素から離れた場合のみ処理
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+                e.currentTarget.classList.remove('drag-over');
+                if (draggedOverItemIndex === parseInt(e.currentTarget.dataset.index)) {
+                    draggedOverItemIndex = null;
+                }
+            }
+        }
+
+        /**
+         * ドラッグ要素がターゲットにドロップされたときの処理
+         * @param {DragEvent} e
+         * @returns {void}
+         */
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const targetItem = e.currentTarget;
+            const targetIndex = parseInt(targetItem.dataset.index);
+            
+            targetItem.classList.remove('drag-over');
+
+            if (draggedItemIndex === null || draggedItemIndex === targetIndex) {
+                return;
+            }
+
+            console.log('Drop:', draggedItemIndex, '->', targetIndex);
+
+            // タスクを移動
+            const [movedTask] = tasks.splice(draggedItemIndex, 1);
+            tasks.splice(targetIndex, 0, movedTask);
+            
+            saveTasks();
+            renderTasks();
+        }
+
+        /**
+         * ドラッグ終了時の処理
+         * @param {DragEvent} e
+         * @returns {void}
+         */
+        function handleDragEnd(e) {
+            // すべてのドラッグ関連のスタイルをクリア
+            document.querySelectorAll('.task-item').forEach(item => {
+                item.classList.remove('dragging', 'drag-over');
+            });
+            
+            draggedItemIndex = null;
+            draggedOverItemIndex = null;
+            
+            console.log('Drag ended');
+        }
+
+        /**
+         * CSVファイルを読み込んでタスクリストに追加する
+         * @returns {void}
+         */
+        function uploadTasksCSV() {
+            fileInput.click();
+        }
+
+        /**
+         * ファイル選択時の処理
+         * @param {Event} event - ファイル選択イベント
+         * @returns {void}
+         */
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csv = e.target.result;
+                    const lines = csv.split('\n');
+                    
+                    // ヘッダー行をスキップ
+                    const dataLines = lines.slice(1).filter(line => line.trim() !== '');
+                    
+                    dataLines.forEach(line => {
+                        const columns = parseCSVLine(line);
+                        if (columns.length >= 3) {
+                            const content = columns[0].trim();
+                            const priorityText = columns[1].trim();
+                            const completedText = columns[2].trim();
+                            
+                            if (content) {
+                                // 優先度の変換
+                                let priority = 'none';
+                                if (priorityText === '高') priority = 'high';
+                                else if (priorityText === '中') priority = 'medium';
+                                else if (priorityText === '低') priority = 'none'; // 低はなしとして扱う
+                                
+                                // 完了状態の変換
+                                const completed = completedText === '完了';
+                                
+                                tasks.push({
+                                    text: content,
+                                    priority: priority,
+                                    completed: completed
+                                });
+                            }
+                        }
+                    });
+                    
+                    saveTasks();
+                    renderTasks();
+                } catch (error) {
+                    alert('CSVファイルの読み込みに失敗しました。');
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+            
+            // ファイル選択をリセット
+            event.target.value = '';
+        }
+
+        /**
+         * CSV行をパースする（ダブルクォート対応）
+         * @param {string} line - CSV行
+         * @returns {Array} - パースされた列データ
+         */
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        current += '"';
+                        i++; // 次の文字をスキップ
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            
+            result.push(current);
+            return result;
+        }
+
+        /**
+         * タスクリストをCSVでダウンロードする
+         * @returns {void}
+         */
+        function downloadTasksCSV() {
+            if (tasks.length === 0) {
+                alert('エクスポートするタスクがありません。');
+                return;
+            }
+            
+            // CSVヘッダー
+            let csvContent = '\ufeff'; // BOM付き
+            csvContent += '内容,重要度,チェックマーク\n';
+            
+            // タスクデータを追加
+            tasks.forEach(task => {
+                const content = task.text.replace(/"/g, '""'); // ダブルクォートをエスケープ
+                const priority = task.priority === 'high' ? '高' : 
+                               task.priority === 'medium' ? '中' : 'なし';
+                const completed = task.completed ? '完了' : '未完了';
+                
+                csvContent += `${content},${priority},${completed}\n`;
+            });
+            
+            // ファイル名に日時を追加
+            const now = new Date();
+            const dateStr = now.toISOString().slice(0, 19).replace(/:/g, '-');
+            const fileName = `todolist_${dateStr}.csv`;
+            
+            // ファイルをダウンロード
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', fileName);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // URLを解放
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+        }
+
+        /**
+         * タスクを編集する
+         * @param {Event} event - ダブルクリックイベント
+         * @param {number} index - タスクのインデックス
+         * @returns {void}
+         */
+        function editTask(event, index) {
+            event.stopPropagation();
+            const taskTextElement = event.target;
+            const currentText = tasks[index].text;
+            
+            // 入力フィールドを作成
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentText;
+            input.style.cssText = `
+                flex: 1;
+                font-size: ${taskTextElement.style.fontSize || '16px'};
+                font-weight: ${taskTextElement.style.fontWeight || '400'};
+                color: #2c3e50;
+                background-color: #ffffff;
+                border: 1px solid #3498db;
+                padding: 4px 8px;
+                margin: 0;
+                outline: none;
+            `;
+            
+            // 元のテキストを入力フィールドに置き換え
+            taskTextElement.parentNode.replaceChild(input, taskTextElement);
+            input.focus();
+            input.select();
+            
+            // 編集完了の処理
+            function finishEdit() {
+                const newText = input.value.trim();
+                if (newText !== '' && newText !== currentText) {
+                    tasks[index].text = newText;
+                    saveTasks();
+                }
+                renderTasks();
+            }
+            
+            // Enterキーで確定、Escapeキーでキャンセル
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    finishEdit();
+                } else if (e.key === 'Escape') {
+                    renderTasks(); // キャンセル時は元に戻す
+                }
+            });
+            
+            // フォーカスが外れた時も確定
+            input.addEventListener('blur', finishEdit);
+        }
+
+        /**
+         * フォントサイズを切り替える
+         * @returns {void}
+         */
+        function toggleFontSize() {
+            if (fontSize === 'normal') {
+                fontSize = 'large';
+            } else if (fontSize === 'large') {
+                fontSize = 'small';
+            } else {
+                fontSize = 'normal';
+            }
+            updateFontSizeButton();
+            saveFontSettings();
+            renderTasks();
+        }
+
+        /**
+         * フォントサイズボタンの表示を更新する
+         * @returns {void}
+         */
+        function updateFontSizeButton() {
+            if (fontSize === 'large') {
+                fontSizeBtn.textContent = '大';
+            } else if (fontSize === 'small') {
+                fontSizeBtn.textContent = '小';
+            } else {
+                fontSizeBtn.textContent = '標準';
+            }
+        }
+
+        /**
+         * フォントの太さを切り替える
+         * @returns {void}
+         */
+        function toggleFontWeight() {
+            if (fontWeight === 'normal') {
+                fontWeight = 'bold';
+            } else {
+                fontWeight = 'normal';
+            }
+            updateFontWeightButton();
+            saveFontSettings();
+            renderTasks();
+        }
+
+        /**
+         * フォント太さボタンの表示を更新する
+         * @returns {void}
+         */
+        function updateFontWeightButton() {
+            if (fontWeight === 'bold') {
+                fontWeightBtn.textContent = '太字';
+            } else {
+                fontWeightBtn.textContent = '通常';
+            }
+        }
+
+        // イベントリスナーの設定
+        addTaskButton.addEventListener('click', addTask);
+        fontSizeBtn.addEventListener('click', toggleFontSize);
+        fontWeightBtn.addEventListener('click', toggleFontWeight);
+        downloadBtn.addEventListener('click', downloadTasksCSV);
+        uploadBtn.addEventListener('click', uploadTasksCSV);
+        fileInput.addEventListener('change', handleFileSelect);
+        newTaskInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                addTask();
+            }
+        });
+
+        // ページが読み込まれたときにタスクをロードし、日付を表示
+        window.onload = function() {
+            loadTasks();
+            displayCurrentDate();
+        };
+
+    </script>
+</body>
+</html>

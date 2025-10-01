@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>世界の呼吸法エクスプローラー</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #FDFBF8;
+            color: #3a3a3a;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .nav-item.active {
+            background-color: #EADDD7;
+            color: #5C3A21;
+            font-weight: 500;
+        }
+        #breathing-visualizer {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background-color: #A6C4DD;
+            margin: 0 auto; /* カウンターの上に配置するためマージン調整 */
+            transition: transform 0.5s ease-in-out;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+        .breathing-animation {
+            animation-name: breathe;
+            animation-duration: 8s;
+            animation-iteration-count: infinite;
+            animation-timing-function: linear;
+        }
+        @keyframes breathe {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(0.8); }
+        }
+        .visualizer-text {
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-[#5C3A21] mb-2">世界の呼吸法エクスプローラー</h1>
+            <p class="text-lg text-gray-600">世界中で実践されている様々な呼吸法について学び、その効果を体験者の声から探ります。</p>
+        </header>
+
+        <main class="flex flex-col md:flex-row gap-8">
+            <aside class="md:w-1/3 lg:w-1/4">
+                <div class="bg-white p-4 rounded-xl shadow-md sticky top-8">
+                    <h2 class="text-xl font-bold mb-4 text-[#5C3A21]">呼吸法を選択</h2>
+                    <nav>
+                        <ul id="technique-nav" class="space-y-2"></ul>
+                    </nav>
+                </div>
+            </aside>
+
+            <section id="content-area" class="md:w-2/3 lg:w-3/4 space-y-8">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 id="technique-title" class="text-3xl font-bold text-[#5C3A21] mb-4"></h2>
+                    <p id="technique-description" class="text-gray-700 leading-relaxed"></p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                     <h3 class="text-2xl font-semibold text-center text-[#5C3A21] mb-4">呼吸パターンガイド</h3>
+                     <p class="text-center text-gray-600 mb-4 max-w-2xl mx-auto">このセクションでは、選択した呼吸法のリズムを視覚的に体験できます。アニメーションと**カウンター**に合わせて、ゆっくりと呼吸してみてください。</p>
+                    
+                    <!-- カウントダウンを円の外側（上部）に配置 -->
+                    <div id="countdown-container" class="text-center mb-4">
+                        <div id="countdown" class="text-6xl font-extrabold text-[#5C3A21] font-['Noto_Sans_JP']"></div>
+                    </div>
+
+                    <div id="breathing-visualizer">
+                        <!-- 呼吸アクションテキストを配置 -->
+                        <div id="visualizer-text" class="visualizer-text text-xl"></div>
+                    </div>
+
+                     <!-- 次のアクション表示エリア -->
+                    <div id="next-action-container" class="mt-8 text-center p-3 bg-stone-100 rounded-lg border border-stone-200 max-w-xs mx-auto">
+                        <p class="text-sm text-gray-500 font-medium">次のアクション:</p>
+                        <p id="next-action-text" class="text-xl font-bold text-[#5C3A21] mt-1">―</p>
+                    </div>
+                     <p id="visualizer-description" class="text-center text-gray-700 mt-4"></p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-2xl font-semibold text-center text-[#5C3A21] mb-4">報告されている主な効果</h3>
+                    <p class="text-center text-gray-600 mb-4 max-w-2xl mx-auto">世界中の実践者から報告された体験レビューを基に、各呼吸法がもたらす主な効果をグラフ化しました。どの効果が最も顕著に現れる傾向にあるかを確認できます。</p>
+                    <div class="chart-container">
+                        <canvas id="effects-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-2xl font-semibold text-[#5C3A21] mb-4">世界からの体験レビュー</h3>
+                    <p class="text-gray-600 mb-4">このセクションでは、様々な背景を持つ人々からの具体的な体験談を紹介します。個々のレビューは、呼吸法が日常生活にどのように役立つかの実例を示しています。</p>
+                    <div id="reviews-container" class="space-y-4"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const breathingData = [
+            {
+                id: 0,
+                name: "腹式呼吸",
+                description: "最も基本的で自然な呼吸法。横隔膜を大きく動かし、深くゆったりとした呼吸を行うことで副交感神経を優位にし、心身をリラックスさせます。ストレス管理や睡眠の質の向上に効果的です。",
+                pattern: {
+                    text: ["吸う", "吐く"],
+                    durations: [4, 6],
+                    description: "鼻から4秒かけてゆっくり息を吸い込みお腹を膨らませ、口から6秒かけてゆっくり息を吐き出しお腹をへこませます。"
+                },
+                effects: { 'リラックス': 85, 'ストレス軽減': 90, '集中力向上': 60, '睡眠改善': 75, '活力アップ': 50 },
+                reviews: [
+                    { from: "日本のオフィスワーカー", text: "毎晩寝る前に5分間実践しています。以前より寝つきが良くなり、日中のイライラも減った気がします。" },
+                    { from: "アメリカの学生", text: "試験前の不安を和らげるのに役立ちました。深く呼吸すると、頭がスッキリします。" }
+                ]
+            },
+            {
+                id: 1,
+                name: "4-7-8呼吸法",
+                description: "アンドルー・ワイル博士が提唱。「精神的な鎮静剤」とも呼ばれ、特に不安の緩和や入眠をサポートします。これは、心を落ち着かせるための強力なツールです。",
+                pattern: {
+                    text: ["吸う", "止める", "吐く"],
+                    durations: [4, 7, 8],
+                    description: "鼻から4秒吸い、7秒息を止め、口から8秒かけて息を吐き出します。これを数回繰り返します。"
+                },
+                effects: { 'リラックス': 95, 'ストレス軽減': 92, '集中力向上': 65, '睡眠改善': 90, '活力アップ': 40 },
+                reviews: [
+                    { from: "イギリスのセラピスト", text: "クライアントに不安を抑えるテクニックとして教えています。即効性があり、多くの方が落ち着きを取り戻します。" },
+                    { from: "カナダの退職者", text: "夜中に目が覚めてしまった時に行うと、再び眠りにつきやすくなります。本当に魔法のようです。" }
+                ]
+            },
+            {
+                id: 2,
+                name: "ボックス呼吸法",
+                description: "米海軍特殊部隊も採用。吸う・止める・吐く・止めるを均等に行い、極度のプレッシャー下でも冷静さと集中力を維持します。心の状態をコントロールするのに最適です。",
+                 pattern: {
+                    text: ["吸う", "止める", "吐く", "止める"],
+                    durations: [4, 4, 4, 4],
+                    description: "4秒吸い、4秒止め、4秒で吐き、4秒止める、というサイクルを繰り返します。"
+                },
+                effects: { 'リラックス': 70, 'ストレス軽減': 80, '集中力向上': 95, '睡眠改善': 50, '活力アップ': 75 },
+                reviews: [
+                    { from: "ドイツのプログラマー", text: "締め切り前のプレッシャーが大きい時に実践します。冷静さを保ち、コーディングに集中できます。" },
+                    { from: "オーストラリアのアスリート", text: "試合前の精神統一に役立てています。心拍数が落ち着き、最高のパフォーマンスを発揮できます。" }
+                ]
+            },
+            {
+                id: 3,
+                name: "ヴィム・ホフ・メソッド",
+                description: "パワフルな連続呼吸と息止めを組み合わせ、体にエネルギーを充満させます。活力増強や免疫機能の向上が期待されます。冷水浴と組み合わせて行われることが多いです。",
+                 pattern: {
+                    text: ["深呼吸", "吐き切る", "息止め"],
+                    durations: [3, 1, 60],
+                    description: "30回パワフルな深呼吸を繰り返した後、息を吐き切り、そのまま出来るだけ長く息を止めます。"
+                },
+                effects: { 'リラックス': 50, 'ストレス軽減': 75, '集中力向上': 85, '睡眠改善': 60, '活力アップ': 98 },
+                reviews: [
+                    { from: "ブラジルの起業家", text: "朝の日課にしています。一日をパワフルに始めることができ、創造性も高まったように感じます。" },
+                    { from: "スウェーデンの健康愛好家", text: "最初は大変でしたが、慣れると爽快感がやみつきになります。風邪をひきにくくなりました。" }
+                ]
+            },
+            {
+                id: 4,
+                name: "片鼻呼吸法（ナディ・ショーダナ）",
+                description: "ヨガの伝統技法。左右の鼻を交互に使い呼吸することで、自律神経のバランスを整え、心を静寂に導きます。特に瞑想前に行うと効果的です。",
+                 pattern: {
+                    text: ["左から吸う", "止める", "右から吐く", "止める"],
+                    durations: [4, 2, 4, 2],
+                    description: "右の鼻を指で押さえ左から吸い、数秒止め、左を押さえて右から吐く。次に右から吸い、左から吐く。これを繰り返します。"
+                },
+                effects: { 'リラックス': 88, 'ストレス軽減': 85, '集中力向上': 90, '睡眠改善': 70, '活力アップ': 65 },
+                reviews: [
+                    { from: "インドのヨガ講師", text: "瞑想の前に必ず行います。思考がクリアになり、より深い瞑想状態に入りやすくなります。" },
+                    { from: "フランスのアーティスト", text: "創作活動に行き詰まった時に行うと、新しいアイデアが浮かびやすくなります。心のバランスが取れる感覚です。" }
+                ]
+            },
+            {
+                id: 5,
+                name: "カパラバティ呼吸法",
+                description: "「頭蓋を輝かせる」という意味を持つヨガの浄化法。力強い呼気を繰り返し、脳を覚醒させエネルギーを高めます。早朝の気分転換に最適です。",
+                 pattern: {
+                    text: ["強く吐く", "吸う(受動的)"],
+                    durations: [0.5, 0.5],
+                    description: "お腹をへこませながら、鼻から「フンッ」と力強く短く息を吐き出すことをリズミカルに繰り返します。吸気は自然に行います。"
+                },
+                effects: { 'リラックス': 40, 'ストレス軽減': 60, '集中力向上': 80, '睡眠改善': 30, '活力アップ': 95 },
+                reviews: [
+                    { from: "韓国のダンサー", text: "レッスンの前のウォームアップに取り入れています。体が温まり、頭が冴え渡ります。" },
+                    { from: "イタリアのシェフ", text: "長い勤務で疲れた時に行うと、午後のもうひと頑張りのエネルギーが湧いてきます。" }
+                ]
+            },
+            {
+                id: 6,
+                name: "ライオンの呼吸（シンハーサナ）",
+                description: "顔の筋肉を使い、感情を解放するユニークな方法。口を大きく開け舌を出し「ハーッ」と吐き出しストレスを発散します。溜め込んだ感情を外に出したい時に試してみてください。",
+                pattern: {
+                    text: ["吸う", "ハーッと吐く"],
+                    durations: [3, 2],
+                    description: "大きく息を吸い、口を大きく開け、舌をできるだけ下に出し、「ハーッ」と音を立てて力強く息を吐き出します。"
+                },
+                effects: { 'リラックス': 75, 'ストレス軽減': 85, '集中力向上': 50, '睡眠改善': 40, '活力アップ': 70 },
+                reviews: [
+                    { from: "中国の俳優", text: "発声練習の前にやると、顔周りの緊張がほぐれて声が出やすくなります。気分もスッキリします。" },
+                    { from: "メキシコの教師", text: "子供たちと一緒にやると、クラスの雰囲気が明るくなります。ストレス発散に最適です。" }
+                ]
+            },
+            {
+                id: 7,
+                name: "数息観（すそくかん）",
+                description: "禅の瞑想法の基本。自分の呼吸を「ひとつ、ふたつ」と静かに数えることで、意識を「今」に集中させ、心を整えます。マインドフルネスの土台となる技法です。",
+                pattern: {
+                    text: ["吸う", "吐く"],
+                    durations: [5, 5],
+                    description: "吐く息を「ひとーつ」、吸う息を「ふたーつ」と、十まで数えます。十まで数えたら、また一に戻ります。"
+                },
+                effects: { 'リラックス': 80, 'ストレス軽減': 82, '集中力向上': 92, '睡眠改善': 65, '活力アップ': 55 },
+                reviews: [
+                    { from: "日本の僧侶", text: "心を落ち着け、雑念を払うための最も基本的な修行です。続けることで、心の静けさが深まります。" },
+                    { from: "ニュージーランドの作家", text: "執筆中の集中力を維持するために、1時間に一度行っています。思考が整理され、生産性が上がります。" }
+                ]
+            },
+            {
+                id: 8,
+                name: "生理的なため息",
+                description: "スタンフォード大の研究で効果が示された方法。2回吸って1回長く吐くことで、肺をリセットし、不安を即座に和らげます。短時間で高いリラックス効果を得たい場合に有効です。",
+                pattern: {
+                    text: ["短く吸う(1)", "短く吸う(2)", "長く吐く"],
+                    durations: [1, 1, 3],
+                    description: "鼻から短く２回息を吸い込み（１回目で肺を満たし、２回目でさらに少し吸う）、口から長くゆっくりと息を吐き出します。"
+                },
+                effects: { 'リラックス': 92, 'ストレス軽減': 95, '集中力向上': 70, '睡眠改善': 75, '活力アップ': 60 },
+                reviews: [
+                    { from: "アメリカの科学者", text: "研究で効果が示されていると知り、試してみました。わずか１回でも、心身がリセットされる感覚があります。" },
+                    { from: "南アフリカのソーシャルワーカー", text: "感情的に疲れた時に、このため息を３回繰り返します。驚くほど気分が落ち着き、前向きになれます。" }
+                ]
+            },
+            {
+                id: 9,
+                name: "均等呼吸法（サマ・ヴリッティ）",
+                description: "ヨガの基本的な呼吸法で、吸う息と吐く息の長さを同じにすることで、神経系のバランスを整え、心を穏やかにします。初心者にも取り組みやすいテクニックです。",
+                pattern: {
+                    text: ["吸う", "吐く"],
+                    durations: [4, 4],
+                    description: "鼻から4秒かけて吸い、鼻から4秒かけて吐きます。慣れてきたら、秒数を6秒や8秒に延ばしていきます。"
+                },
+                effects: { 'リラックス': 85, 'ストレス軽減': 88, '集中力向上': 80, '睡眠改善': 70, '活力アップ': 65 },
+                reviews: [
+                    { from: "スペインのデザイナー", text: "仕事中の短い休憩に取り入れています。思考の切り替えがスムーズになり、午後の作業もはかどります。" },
+                    { from: "ロシアの音楽家", text: "演奏前の精神統一に最適です。リズムが一定なので、心の波を静めるのに役立ちます。" }
+                ]
+            }
+        ];
+
+        let currentTechniqueId = 0;
+        let effectsChart = null;
+
+        let animationRAFId = null; 
+        let currentPhaseIndex = 0;
+        let phaseStartTime = 0;
+        let totalDuration = 0; 
+        let cycleStartTime = 0;
+
+        const techniqueNav = document.getElementById('technique-nav');
+        const techniqueTitle = document.getElementById('technique-title');
+        const techniqueDescription = document.getElementById('technique-description');
+        const visualizer = document.getElementById('breathing-visualizer');
+        const visualizerText = document.getElementById('visualizer-text');
+        const visualizerDescription = document.getElementById('visualizer-description');
+        const reviewsContainer = document.getElementById('reviews-container');
+        
+        // カウントダウン要素を新しい場所で取得
+        const countdownEl = document.getElementById('countdown');
+        const nextActionEl = document.getElementById('next-action-text');
+
+
+        function createOrUpdateChart(data) {
+            const ctx = document.getElementById('effects-chart').getContext('2d');
+            const labels = Object.keys(data);
+            const values = Object.values(data);
+
+            if (effectsChart) {
+                effectsChart.data.labels = labels;
+                effectsChart.data.datasets[0].data = values;
+                effectsChart.update();
+            } else {
+                effectsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '報告された効果の割合 (%)',
+                            data: values,
+                            backgroundColor: '#A6C4DD',
+                            borderColor: '#82A9C9',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.label}: ${context.raw}% のユーザーが効果を報告`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                max: 100,
+                                grid: {
+                                    color: '#f0f0f0'
+                                }
+                            },
+                             y: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        function getNextActionText(pattern, currentIndex) {
+            const nextIndex = (currentIndex + 1) % pattern.text.length;
+            return pattern.text[nextIndex];
+        }
+
+        function startBreathingCycle(pattern) {
+            if (animationRAFId) cancelAnimationFrame(animationRAFId);
+            
+            currentPhaseIndex = 0;
+            cycleStartTime = performance.now();
+            totalDuration = pattern.durations.reduce((a, b) => a + b, 0);
+
+            function loop(timestamp) {
+                if (!cycleStartTime) cycleStartTime = timestamp;
+
+                const elapsedInCycle = ((timestamp - cycleStartTime) / 1000) % totalDuration;
+                
+                let cumulativeDuration = 0;
+                let found = false;
+                
+                for (let i = 0; i < pattern.durations.length; i++) {
+                    cumulativeDuration += pattern.durations[i];
+                    if (elapsedInCycle < cumulativeDuration) {
+                        currentPhaseIndex = i;
+                        const currentPhaseDuration = pattern.durations[i];
+                        const elapsedInPhase = elapsedInCycle - (cumulativeDuration - currentPhaseDuration);
+                        
+                        const remainingSeconds = Math.max(0, currentPhaseDuration - elapsedInPhase);
+                        
+                        // 残り秒数を大きく表示
+                        countdownEl.textContent = remainingSeconds < 0.1 ? pattern.durations[i] : Math.ceil(remainingSeconds);
+                        
+                        // 円の中央にアクションを表示
+                        visualizerText.textContent = pattern.text[currentPhaseIndex];
+                        
+                        // 次のアクションを表示
+                        nextActionEl.textContent = getNextActionText(pattern, currentPhaseIndex);
+                        
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    cycleStartTime = timestamp; 
+                }
+                
+                animationRAFId = requestAnimationFrame(loop);
+            }
+
+            animationRAFId = requestAnimationFrame(loop);
+        }
+
+
+        function updateBreathingVisualizer(pattern) {
+            visualizer.style.animation = 'none';
+            visualizer.offsetHeight; 
+            
+            const totalDuration = pattern.durations.reduce((a, b) => a + b, 0);
+            visualizer.style.animationDuration = `${totalDuration}s`;
+            visualizer.style.animationName = 'breathe';
+            visualizer.style.animationTimingFunction = 'linear';
+
+            const keyframes = [];
+            let currentTime = 0;
+            const scales = {
+                "吸う": 1.2, "左から吸う": 1.2, "右から吸う": 1.2, "短く吸う(1)": 1.1, "短く吸う(2)": 1.2, "深呼吸": 1.2,
+                "吐く": 0.8, "右から吐く": 0.8, "左から吐く": 0.8, "長く吐く": 0.7, "吐き切る": 0.8, "ハーッと吐く": 0.8, "強く吐く": 0.95,
+                "止める": "current", "息止め": "current", "吸う(受動的)": 1.0, "呼吸を数える": 1.0, 
+            };
+            
+            let lastScale = 1.0;
+            if (pattern.text.length > 1) {
+                pattern.text.forEach((action, index) => {
+                    const percentageStart = (currentTime / totalDuration) * 100;
+                    if (index > 0) {
+                         keyframes.push(`${percentageStart}% { transform: scale(${lastScale}); }`);
+                    } else {
+                         keyframes.push(`0% { transform: scale(${scales[pattern.text[pattern.text.length - 1]] || 1.0}); }`);
+                    }
+                    
+                    currentTime += pattern.durations[index];
+                    const percentageEnd = (currentTime / totalDuration) * 100;
+                    
+                    let targetScale = scales[action] || 1.0;
+                    if (targetScale === "current") {
+                        targetScale = lastScale; 
+                    }
+                    
+                    keyframes.push(`${percentageEnd}% { transform: scale(${targetScale}); }`);
+                    lastScale = targetScale;
+                });
+            } else {
+                 keyframes.push(`0% { transform: scale(0.9); } 50% { transform: scale(1.1); } 100% { transform: scale(0.9); }`);
+            }
+           
+            if (keyframes.length > 0) {
+                keyframes.push(`100% { transform: scale(${scales[pattern.text[pattern.text.length - 1]] || 1.0}); }`);
+            }
+
+
+            const styleSheet = document.styleSheets[document.styleSheets.length - 1];
+            
+            for(let i = 0; i < styleSheet.cssRules.length; i++) {
+                if(styleSheet.cssRules[i].name === 'breathe') {
+                    styleSheet.deleteRule(i);
+                    i--;
+                }
+            }
+            styleSheet.insertRule(`@keyframes breathe { ${keyframes.join(' ')} }`, styleSheet.cssRules.length);
+
+            startBreathingCycle(pattern);
+        }
+
+        function updateUI(techniqueId) {
+            currentTechniqueId = techniqueId;
+            const data = breathingData.find(t => t.id === techniqueId);
+            if (!data) return;
+
+            techniqueTitle.textContent = data.name;
+            techniqueDescription.textContent = data.description;
+            
+            visualizerDescription.textContent = data.pattern.description;
+            updateBreathingVisualizer(data.pattern);
+
+            createOrUpdateChart(data.effects);
+
+            reviewsContainer.innerHTML = '';
+            data.reviews.forEach(review => {
+                const reviewEl = document.createElement('div');
+                reviewEl.className = 'bg-stone-100 p-4 rounded-lg border-l-4 border-[#EADDD7]';
+                reviewEl.innerHTML = `
+                    <p class="italic text-gray-800">"${review.text}"</p>
+                    <p class="text-right text-sm font-semibold text-[#5C3A21] mt-2">- ${review.from}</p>
+                `;
+                reviewsContainer.appendChild(reviewEl);
+            });
+
+            document.querySelectorAll('#technique-nav li').forEach(item => {
+                item.classList.remove('active');
+                if (parseInt(item.dataset.id) === techniqueId) {
+                    item.classList.add('active');
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            breathingData.forEach(technique => {
+                const li = document.createElement('li');
+                li.className = 'nav-item p-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-stone-100';
+                li.textContent = technique.name;
+                li.dataset.id = technique.id;
+                li.addEventListener('click', () => {
+                    updateUI(technique.id);
+                });
+                techniqueNav.appendChild(li);
+            });
+            updateUI(0);
+        });
+    </script>
+</body>
+</html>

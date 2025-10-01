@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ファイル振り分けバッチ作成ツール (設定保存機能付き)</title>
+    <style>
+        /* --- 全体設定 --- */
+        body {
+            font-family: 'BIZ UDPGothic', 'メイリオ', Meiryo, sans-serif;
+            font-size: 16px;
+            background-color: #f4f7f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* --- コンテナ --- */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 1px solid #c0c0c0;
+            padding: 25px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* --- ヘッダー --- */
+        header h1 {
+            font-size: 24px;
+            color: #1a237e;
+            border-bottom: 2px solid #1a237e;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        header p, .section-description {
+            font-size: 15px;
+            line-height: 1.7;
+            background-color: #eef2f5;
+            padding: 15px;
+            border-left: 5px solid #64b5f6;
+            margin-bottom: 15px;
+        }
+        
+        /* --- 各セクション --- */
+        .section {
+            margin-top: 30px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border-left: 4px solid #4CAF50;
+            padding-left: 10px;
+        }
+
+        /* --- 設定のインポート/エクスポート --- */
+        .settings-io {
+            background-color: #f9f9f9;
+            border: 1px dashed #aaa;
+            padding: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        /* --- フォルダパス入力 --- */
+        .folder-path-input {
+            width: 98%;
+            padding: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        /* --- ルール入力テーブル --- */
+        .rules-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #999;
+        }
+
+        .rules-table th, .rules-table td {
+            border: 1px solid #999;
+            padding: 12px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        .rules-table th {
+            background-color: #e0e0e0;
+            font-weight: bold;
+        }
+
+        .rules-table input[type="text"] {
+            width: 98%;
+            padding: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        /* --- ボタン共通スタイル --- */
+        .btn {
+            font-family: inherit;
+            font-size: 15px;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover { opacity: 0.85; }
+
+        .btn-add { background-color: #28a745; }
+        .btn-delete { background-color: #dc3545; padding: 8px 12px; }
+        .btn-export { background-color: #ff8f00; }
+        .btn-import { background-color: #42a5f5; }
+        .btn-generate { background-color: #007bff; font-size: 18px; width: 100%; padding: 15px; }
+        .btn-copy { background-color: #6c757d; }
+        .btn-download { background-color: #17a2b8; }
+        
+        .action-area { text-align: center; margin-top: 20px; }
+        
+        #result-code {
+            width: 100%;
+            height: 300px;
+            margin-top: 10px;
+            padding: 10px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            background-color: #fdfdfd;
+            box-sizing: border-box;
+        }
+        
+        .result-actions { margin-top: 15px; }
+        .result-actions .btn { margin-right: 10px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>ファイル振り分けバッチ作成ツール (設定保存機能付き)</h1>
+            <p>
+                指定したフォルダにあるファイルを、別のフォルダへ<b>安全に</b>自動で振り分けるバッチファイルを作成します。<br>
+                入力した内容は自動でブラウザに保存され、次回も同じ状態で始められます。
+            </p>
+        </header>
+
+        <main>
+            <div class="section">
+                <h2 class="section-title">設定の保存と復元</h2>
+                <div class="settings-io">
+                    <button id="export-btn" class="btn btn-export">現在の設定をファイルに書き出し</button>
+                    <button id="import-btn" class="btn btn-import">設定ファイルを読み込む</button>
+                    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">1. 移動元フォルダの設定</h2>
+                <div class="section-description">
+                    ファイルを移動させたい元のフォルダのパスを指定します。
+                </div>
+                <input type="text" id="source-folder-input" class="folder-path-input">
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">2. 振り分けルール設定</h2>
+                <div class="section-description">
+                    <b>ファイル名のパターン</b>にキーワードを入力すると、そのキーワードを含むファイルがすべて対象になります。<br>
+                    （例: 「<code>業務日報</code>」と入力すると「<code>*業務日報*</code>」として扱われます）
+                </div>
+                <table class="rules-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 45%;">ファイル名のパターン (移動元フォルダ内)</th>
+                            <th style="width: 45%;">移動先のフォルダのフルパス</th>
+                            <th style="width: 10%;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rules-body">
+                        <!-- ルール入力行はここに動的に追加されます -->
+                    </tbody>
+                </table>
+                <div class="action-area">
+                    <button id="add-rule-btn" class="btn btn-add">＋ ルールを追加する</button>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2 class="section-title">3. オプション</h2>
+                <div class="options-area">
+                    <label>
+                        <input type="checkbox" id="option-create-folder" checked> 移動先のフォルダがない場合に自動で作成する
+                    </label>
+                    <label>
+                        <input type="checkbox" id="option-pause" checked> 実行後にウィンドウがすぐに閉じないようにする
+                    </label>
+                </div>
+            </div>
+
+            <div class="section">
+                <button id="generate-btn" class="btn btn-generate">⚙️ バッチファイルを生成する</button>
+            </div>
+        </main>
+
+        <footer>
+            <div id="result-area" class="section" style="display:none;">
+                <h2 class="section-title">生成結果</h2>
+                <textarea id="result-code" readonly></textarea>
+                <div class="result-actions">
+                    <button id="copy-btn" class="btn btn-copy">📋 コードをコピーする</button>
+                    <button id="download-btn" class="btn btn-download">💾 .batファイルとしてダウンロード</button>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const STORAGE_KEY = 'fileOrganizerSettings';
+            const DEFAULT_SOURCE_FOLDER = '%USERPROFILE%\\Downloads';
+
+            const sourceFolderInput = document.getElementById('source-folder-input');
+            const rulesBody = document.getElementById('rules-body');
+            // ... (他の要素取得は省略) ...
+            const addRuleBtn = document.getElementById('add-rule-btn');
+            const generateBtn = document.getElementById('generate-btn');
+            const copyBtn = document.getElementById('copy-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            const exportBtn = document.getElementById('export-btn');
+            const importBtn = document.getElementById('import-btn');
+            const importFileInput = document.getElementById('import-file-input');
+            const resultArea = document.getElementById('result-area');
+            const resultCode = document.getElementById('result-code');
+
+
+            // --- 関数定義 ---
+
+            // 現在の全設定をlocalStorageに保存する
+            const saveSettings = () => {
+                const rules = [];
+                const rows = rulesBody.getElementsByTagName('tr');
+                for (let row of rows) {
+                    const pattern = row.cells[0].querySelector('input').value.trim();
+                    const folderPath = row.cells[1].querySelector('input').value.trim();
+                    if(pattern || folderPath) {
+                        rules.push({ pattern, folderPath });
+                    }
+                }
+                const settings = {
+                    sourceFolder: sourceFolderInput.value.trim(),
+                    rules: rules
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+            };
+            
+            // UIに設定を適用する
+            const applySettings = (settings) => {
+                 sourceFolderInput.value = (settings && settings.sourceFolder) ? settings.sourceFolder : DEFAULT_SOURCE_FOLDER;
+                 rulesBody.innerHTML = '';
+                 const rules = (settings && Array.isArray(settings.rules)) ? settings.rules : [];
+                 if (rules.length > 0) {
+                    rules.forEach(rule => addRuleRow(rule.pattern, rule.folderPath));
+                 } else {
+                    addRuleRow();
+                 }
+            };
+            
+            // localStorageから設定を読み込んで表示する
+            const loadSettings = () => {
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                let settings = null;
+                try {
+                    if (savedData) {
+                        settings = JSON.parse(savedData);
+                        if (Array.isArray(settings)) {
+                            settings = { sourceFolder: DEFAULT_SOURCE_FOLDER, rules: settings };
+                        }
+                    }
+                } catch(e) { console.error("設定の読み込みに失敗しました。", e); }
+                applySettings(settings);
+            };
+
+            // 新しいルール行を追加する関数
+            const addRuleRow = (pattern = '', folderPath = '') => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input type="text" placeholder="例: 業務日報" value="${pattern}"></td>
+                    <td><input type="text" placeholder="例: D:\\書類\\日報" value="${folderPath}"></td>
+                    <td style="text-align: center;"><button class="btn btn-delete">削除</button></td>
+                `;
+                rulesBody.appendChild(row);
+            };
+
+            // バッチファイルを生成する関数
+            const generateBatchFile = () => {
+                saveSettings();
+                let script = `@echo off\n`;
+                script += `chcp 65001 > nul\n`;
+                script += `setlocal enabledelayedexpansion\n\n`;
+                
+                const sourceFolder = sourceFolderInput.value.trim() || DEFAULT_SOURCE_FOLDER;
+                script += `rem --- 移動元フォルダ: ${sourceFolder} ---\n\n`;
+                script += `rem --- 振り分け処理 ---\n`;
+                
+                const createFolder = document.getElementById('option-create-folder').checked;
+                const rows = rulesBody.getElementsByTagName('tr');
+
+                for (let row of rows) {
+                    let patternRaw = row.cells[0].querySelector('input').value.trim();
+                    const folderPath = row.cells[1].querySelector('input').value.trim();
+
+                    if (patternRaw && folderPath) {
+                        
+                        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+                        // ★ 改修点: ワイルドカードがなければ自動で付与 ★
+                        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+                        let finalPattern = patternRaw;
+                        if (!patternRaw.includes('*') && !patternRaw.includes('?')) {
+                            finalPattern = `*${patternRaw}*`;
+                        }
+                        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+                        const destinationFolder = folderPath;
+                        script += `\nrem --- [ルール] 「${patternRaw}」を含むファイルを「${destinationFolder}」へ安全に移動 ---\n`;
+                        if (createFolder) {
+                            script += `if not exist "${destinationFolder}" (mkdir "${destinationFolder}")\n`;
+                        }
+                        script += `for %%F in ("${sourceFolder}\\${finalPattern}") do (\n`;
+                        script += `    echo.\n`;
+                        script += `    echo [処理対象] "%%~nxF"\n`;
+                        script += `    copy "%%F" "${destinationFolder}\\" > nul\n`;
+                        script += `    fc /b "%%F" "${destinationFolder}\\%%~nxF" > nul\n`;
+                        script += `    if !errorlevel! == 0 (\n`;
+                        script += `        echo   ...OK。元ファイルを削除します。\n`;
+                        script += `        del "%%F"\n`;
+                        script += `    ) else (\n`;
+                        script += `        echo   ...[警告] 整合性エラー。ファイルを両方残します。\n`;
+                        script += `    )\n`;
+                        script += `)\n`;
+                    }
+                }
+                
+                script += `\nrem --- 処理完了 ---\n`;
+                script += `echo.\necho 全ての処理が完了しました。\n`;
+                if (document.getElementById('option-pause').checked) {
+                    script += `pause\n`;
+                }
+                resultCode.value = script;
+                resultArea.style.display = 'block';
+                resultArea.scrollIntoView({ behavior: 'smooth' });
+            };
+
+            // --- イベントリスナー設定 --- (変更なし)
+
+            sourceFolderInput.addEventListener('input', saveSettings);
+            rulesBody.addEventListener('input', saveSettings);
+            rulesBody.addEventListener('change', saveSettings);
+            addRuleBtn.addEventListener('click', () => { addRuleRow(); saveSettings(); });
+            rulesBody.addEventListener('click', function(e) {
+                if (e.target && e.target.classList.contains('btn-delete')) {
+                    e.target.closest('tr').remove();
+                    saveSettings();
+                }
+            });
+            exportBtn.addEventListener('click', () => {
+                saveSettings();
+                const settingsJson = localStorage.getItem(STORAGE_KEY);
+                const blob = new Blob([settingsJson], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = 'rules_backup.json'; a.click(); URL.revokeObjectURL(url);
+            });
+            importBtn.addEventListener('click', () => importFileInput.click());
+            importFileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        let settings = JSON.parse(e.target.result);
+                        if (Array.isArray(settings)) { settings = { sourceFolder: DEFAULT_SOURCE_FOLDER, rules: settings }; }
+                        else if (typeof settings !== 'object' || !settings.hasOwnProperty('rules')) { throw new Error("無効な設定ファイル形式です。"); }
+                        applySettings(settings); saveSettings(); alert('設定ファイルを読み込みました。');
+                    } catch (error) { alert('ファイルの読み込みに失敗しました。'); console.error(error); }
+                };
+                reader.readAsText(file); event.target.value = '';
+            });
+            generateBtn.addEventListener('click', generateBatchFile);
+            copyBtn.addEventListener('click', () => { resultCode.select(); document.execCommand('copy'); alert('コピーしました。'); });
+            downloadBtn.addEventListener('click', () => {
+                const text = resultCode.value.replace(/\n/g, "\r\n");
+                const blob = new Blob([text], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = 'safe_file_organizer.bat'; a.click(); URL.revokeObjectURL(url);
+            });
+            
+            // --- 初期化処理 ---
+            loadSettings();
+        });
+    </script>
+</body>
+</html>
