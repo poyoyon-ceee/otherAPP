@@ -267,11 +267,15 @@ class NetworkMonitorV2:
             return False
 
 class NetworkMonitorGUI:
-    def __init__(self):
+    def __init__(self, silent_mode=False):
         self.monitor = NetworkMonitorV2()
         self.root = tk.Tk()
         self.root.title("Tethering Network Monitor V2")
         self.root.geometry("1200x750")
+        self.silent_mode = silent_mode  # Silent mode suppresses popups
+        
+        # Prevent window from flashing when minimized
+        self.root.attributes('-topmost', False)
         
         self.setup_ui()
         
@@ -336,7 +340,13 @@ class NetworkMonitorGUI:
         
         self.clear_button = ttk.Button(button_frame, text="Clear Data", 
                                      command=self.clear_data)
-        self.clear_button.grid(row=0, column=3)
+        self.clear_button.grid(row=0, column=3, padx=(0, 10))
+        
+        # Silent mode toggle
+        self.silent_var = tk.BooleanVar(value=self.silent_mode)
+        self.silent_check = ttk.Checkbutton(button_frame, text="Silent Mode (No popups)", 
+                                           variable=self.silent_var)
+        self.silent_check.grid(row=0, column=4)
         
         # Status and stats frame
         stats_frame = ttk.LabelFrame(main_frame, text="Network Statistics", padding="10")
@@ -454,11 +464,14 @@ class NetworkMonitorGUI:
             }.get(interval, f"{interval} seconds")
             
             self.status_label.config(text=f"Monitoring... (updates every {interval_text})", foreground="green")
-            messagebox.showinfo("Started", 
-                              f"Network monitoring started.\n\n"
-                              f"Monitoring interval: {interval_text}\n"
-                              f"Per-app usage is estimated based on connection count.\n"
-                              f"First measurement will appear in {interval_text}.")
+            
+            # Show popup only if not in silent mode
+            if not self.silent_var.get():
+                messagebox.showinfo("Started", 
+                                  f"Network monitoring started.\n\n"
+                                  f"Monitoring interval: {interval_text}\n"
+                                  f"Per-app usage is estimated based on connection count.\n"
+                                  f"First measurement will appear in {interval_text}.")
         except Exception as e:
             messagebox.showerror("Error", f"Start monitoring error: {e}")
     
@@ -487,7 +500,8 @@ class NetworkMonitorGUI:
         try:
             filename = f"network_usage_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
             if self.monitor.save_data_to_file(filename):
-                messagebox.showinfo("Save Complete", f"Data saved to {filename}")
+                if not self.silent_var.get():
+                    messagebox.showinfo("Save Complete", f"Data saved to {filename}")
             else:
                 messagebox.showerror("Error", "Failed to save data")
         except Exception as e:
@@ -498,7 +512,8 @@ class NetworkMonitorGUI:
         if messagebox.askyesno("Confirm", "Clear all cumulative data?"):
             self.monitor.process_data.clear()
             self.update_display()
-            messagebox.showinfo("Complete", "Data cleared")
+            if not self.silent_var.get():
+                messagebox.showinfo("Complete", "Data cleared")
     
     def update_display(self):
         """Update display"""
@@ -573,9 +588,22 @@ class NetworkMonitorGUI:
 
 def main():
     """Main function"""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Tethering Network Monitor App V2')
+    parser.add_argument('--silent', action='store_true', 
+                       help='Start in silent mode (no popup messages)')
+    parser.add_argument('--minimized', action='store_true',
+                       help='Start minimized to taskbar')
+    args = parser.parse_args()
+    
     print("Starting Tethering Network Monitor App V2...")
-    print("This app monitors network usage per application every 3 minutes")
+    print("This app monitors network usage per application")
     print("Per-app usage is ESTIMATED based on connection count.")
+    
+    if args.silent:
+        print("Silent mode: Popup messages disabled")
+    
     print()
     
     # Check admin privileges
@@ -589,7 +617,12 @@ def main():
         pass
     
     # Start GUI app
-    app = NetworkMonitorGUI()
+    app = NetworkMonitorGUI(silent_mode=args.silent)
+    
+    # Start minimized if requested
+    if args.minimized:
+        app.root.iconify()
+    
     app.run()
 
 if __name__ == "__main__":
