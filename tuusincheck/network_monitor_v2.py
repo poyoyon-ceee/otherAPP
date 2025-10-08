@@ -19,14 +19,19 @@ import sys
 import subprocess
 
 class NetworkMonitorV2:
-    def __init__(self):
+    def __init__(self, update_interval=180):
         self.monitoring = False
         self.process_data = defaultdict(lambda: {'bytes_sent': 0, 'bytes_recv': 0, 'last_update': None})
         self.previous_connections = {}
         self.connection_bytes = {}
         self.monitor_thread = None
-        self.update_interval = 180  # 3 minutes interval (seconds)
+        self.update_interval = update_interval  # Monitoring interval (seconds)
         self.last_measurement_time = None
+    
+    def set_update_interval(self, interval):
+        """Set monitoring interval in seconds"""
+        self.update_interval = interval
+        print(f"Monitoring interval set to {interval} seconds")
         
     def get_network_connections_with_stats(self):
         """Get network connections with statistics using netstat"""
@@ -282,14 +287,40 @@ class NetworkMonitorGUI:
         title_label.grid(row=0, column=0, columnspan=4, pady=(0, 5))
         
         # Info label
-        info_label = ttk.Label(main_frame, 
-                              text="Monitors network usage per application every 3 minutes (estimated based on connection count)",
+        self.info_label = ttk.Label(main_frame, 
+                              text="Monitors network usage per application at selected intervals (estimated based on connection count)",
                               font=("Arial", 9), foreground="blue")
-        info_label.grid(row=1, column=0, columnspan=4, pady=(0, 10))
+        self.info_label.grid(row=1, column=0, columnspan=4, pady=(0, 10))
+        
+        # Interval selection frame
+        interval_frame = ttk.LabelFrame(main_frame, text="Monitoring Interval", padding="10")
+        interval_frame.grid(row=2, column=0, columnspan=4, pady=(0, 10), sticky=(tk.W, tk.E))
+        
+        ttk.Label(interval_frame, text="Select interval:").grid(row=0, column=0, padx=(0, 10))
+        
+        self.interval_var = tk.StringVar(value="180")
+        
+        intervals = [
+            ("30 seconds (Real-time)", "30"),
+            ("1 minute (Recommended)", "60"),
+            ("3 minutes (Balanced)", "180"),
+            ("5 minutes (Light)", "300")
+        ]
+        
+        for i, (text, value) in enumerate(intervals):
+            rb = ttk.Radiobutton(interval_frame, text=text, variable=self.interval_var, 
+                                value=value, command=self.on_interval_change)
+            rb.grid(row=0, column=i+1, padx=5)
+        
+        # Load info
+        load_info_label = ttk.Label(interval_frame, 
+                                    text="⚡30s: High precision | ⭐1min: Best balance | 🔋3-5min: Low CPU usage",
+                                    font=("Arial", 8), foreground="gray")
+        load_info_label.grid(row=1, column=0, columnspan=5, pady=(5, 0))
         
         # Control buttons
         button_frame = ttk.Frame(main_frame)
-        button_frame.grid(row=2, column=0, columnspan=4, pady=(0, 10))
+        button_frame.grid(row=3, column=0, columnspan=4, pady=(0, 10))
         
         self.start_button = ttk.Button(button_frame, text="Start Monitoring", 
                                       command=self.start_monitoring)
@@ -309,7 +340,7 @@ class NetworkMonitorGUI:
         
         # Status and stats frame
         stats_frame = ttk.LabelFrame(main_frame, text="Network Statistics", padding="10")
-        stats_frame.grid(row=3, column=0, columnspan=4, pady=(0, 10), sticky=(tk.W, tk.E))
+        stats_frame.grid(row=4, column=0, columnspan=4, pady=(0, 10), sticky=(tk.W, tk.E))
         
         self.status_label = ttk.Label(stats_frame, text="Monitoring Stopped", 
                                      foreground="red", font=("Arial", 10, "bold"))
@@ -323,7 +354,7 @@ class NetworkMonitorGUI:
         
         # Results display Treeview
         tree_frame = ttk.LabelFrame(main_frame, text="Per-Application Network Usage (Cumulative)", padding="5")
-        tree_frame.grid(row=4, column=0, columnspan=4, sticky=(tk.W, tk.E, tk.N, tk.S))
+        tree_frame.grid(row=5, column=0, columnspan=4, sticky=(tk.W, tk.E, tk.N, tk.S))
         
         columns = ('Rank', 'PID', 'App Name', 'Sent', 'Received', 'Total', 'Connections', 'Last Update')
         self.tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=22)
@@ -359,30 +390,75 @@ class NetworkMonitorGUI:
         note_label = ttk.Label(main_frame, 
                               text="Note: Per-app usage is estimated based on connection count. For exact measurements, use tools like GlassWire or Wireshark.",
                               font=("Arial", 8), foreground="gray")
-        note_label.grid(row=5, column=0, columnspan=4, pady=(5, 0))
+        note_label.grid(row=6, column=0, columnspan=4, pady=(5, 0))
         
         # Grid weights
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         main_frame.columnconfigure(0, weight=1)
-        main_frame.rowconfigure(4, weight=1)
+        main_frame.rowconfigure(5, weight=1)
         tree_frame.columnconfigure(0, weight=1)
         tree_frame.rowconfigure(0, weight=1)
         
         # Update timer
         self.update_timer()
+    
+    def on_interval_change(self):
+        """Handle interval change"""
+        if self.monitor.monitoring:
+            messagebox.showwarning("Warning", 
+                                 "Please stop monitoring before changing the interval.\n"
+                                 "The new interval will be applied when you restart monitoring.")
+            return
+        
+        interval = int(self.interval_var.get())
+        self.monitor.set_update_interval(interval)
+        
+        # Update info label
+        interval_text = {
+            30: "30 seconds",
+            60: "1 minute",
+            180: "3 minutes",
+            300: "5 minutes"
+        }.get(interval, f"{interval} seconds")
+        
+        self.info_label.config(
+            text=f"Monitors network usage per application every {interval_text} (estimated based on connection count)"
+        )
         
     def start_monitoring(self):
         """Start monitoring"""
         try:
+            # Set the interval before starting
+            interval = int(self.interval_var.get())
+            self.monitor.set_update_interval(interval)
+            
             self.monitor.start_monitoring()
             self.start_button.config(state="disabled")
             self.stop_button.config(state="normal")
-            self.status_label.config(text="Monitoring... (updates every 3 minutes)", foreground="green")
+            
+            # Disable interval selection during monitoring
+            for child in self.root.winfo_children():
+                if isinstance(child, ttk.Frame):
+                    for subchild in child.winfo_children():
+                        if isinstance(subchild, ttk.LabelFrame) and "Monitoring Interval" in str(subchild):
+                            for rb in subchild.winfo_children():
+                                if isinstance(rb, ttk.Radiobutton):
+                                    rb.config(state="disabled")
+            
+            interval_text = {
+                30: "30 seconds",
+                60: "1 minute",
+                180: "3 minutes",
+                300: "5 minutes"
+            }.get(interval, f"{interval} seconds")
+            
+            self.status_label.config(text=f"Monitoring... (updates every {interval_text})", foreground="green")
             messagebox.showinfo("Started", 
-                              "Network monitoring started.\n\n"
-                              "Per-app usage is estimated based on connection count.\n"
-                              "First measurement will appear in 3 minutes.")
+                              f"Network monitoring started.\n\n"
+                              f"Monitoring interval: {interval_text}\n"
+                              f"Per-app usage is estimated based on connection count.\n"
+                              f"First measurement will appear in {interval_text}.")
         except Exception as e:
             messagebox.showerror("Error", f"Start monitoring error: {e}")
     
@@ -392,6 +468,16 @@ class NetworkMonitorGUI:
             self.monitor.stop_monitoring()
             self.start_button.config(state="normal")
             self.stop_button.config(state="disabled")
+            
+            # Re-enable interval selection
+            for child in self.root.winfo_children():
+                if isinstance(child, ttk.Frame):
+                    for subchild in child.winfo_children():
+                        if isinstance(subchild, ttk.LabelFrame) and "Monitoring Interval" in str(subchild):
+                            for rb in subchild.winfo_children():
+                                if isinstance(rb, ttk.Radiobutton):
+                                    rb.config(state="normal")
+            
             self.status_label.config(text="Monitoring Stopped", foreground="red")
         except Exception as e:
             messagebox.showerror("Error", f"Stop monitoring error: {e}")

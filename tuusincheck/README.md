@@ -36,13 +36,33 @@ pip install -r requirements.txt
 
 ## Usage
 
-### 1. Start the App
+### 起動方法の選択
+
+#### 方法1: 独立起動（推奨）⭐
+PowerShellやコマンドプロンプトを閉じてもアプリが動作し続けます。
+
+**通常モード:**
+- `独立起動.bat` をダブルクリック
+- または `独立起動.vbs` をダブルクリック
+
+**管理者モード（推奨）:**
+- `独立起動(管理者).bat` をダブルクリック
+- または `独立起動(管理者).vbs` をダブルクリック
+
+#### 方法2: 通常起動
+PowerShellやコマンドプロンプトを閉じるとアプリも終了します。
+
 ```cmd
-start_app.bat
+テザリング通信量チェック(管理者).bat
 ```
-or
+
+#### 方法3: コマンドライン
 ```cmd
-python network_monitor.py
+python network_monitor_v2.py
+```
+または
+```cmd
+pythonw network_monitor_v2.py  # ウィンドウなし
 ```
 
 ### 2. Start Monitoring
