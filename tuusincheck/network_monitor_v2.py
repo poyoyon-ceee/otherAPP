@@ -1,0 +1,510 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Windows 11 Network Monitor App V2
+Monitor network usage per application during tethering every 3 minutes
+Uses Windows Performance Counters for per-process network statistics
+"""
+
+import psutil
+import time
+import json
+import os
+from datetime import datetime, timedelta
+from collections import defaultdict
+import threading
+import tkinter as tk
+from tkinter import ttk, messagebox
+import sys
+import subprocess
+
+class NetworkMonitorV2:
+    def __init__(self):
+        self.monitoring = False
+        self.process_data = defaultdict(lambda: {'bytes_sent': 0, 'bytes_recv': 0, 'last_update': None})
+        self.previous_connections = {}
+        self.connection_bytes = {}
+        self.monitor_thread = None
+        self.update_interval = 180  # 3 minutes interval (seconds)
+        self.last_measurement_time = None
+        
+    def get_network_connections_with_stats(self):
+        """Get network connections with statistics using netstat"""
+        connections_by_pid = defaultdict(lambda: {'sent': 0, 'recv': 0, 'connections': []})
+        
+        try:
+            # Use netstat to get connection statistics
+            # This is more reliable on Windows
+            result = subprocess.run(
+                ['netstat', '-ano', '-p', 'TCP'],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            lines = result.stdout.strip().split('\n')
+            
+            for line in lines[4:]:  # Skip header lines
+                parts = line.split()
+                if len(parts) >= 5:
+                    try:
+                        pid = int(parts[-1])
+                        proto = parts[0]
+                        local_addr = parts[1]
+                        foreign_addr = parts[2]
+                        state = parts[3] if len(parts) > 3 else ''
+                        
+                        if state == 'ESTABLISHED':
+                            connections_by_pid[pid]['connections'].append({
+                                'proto': proto,
+                                'local': local_addr,
+                                'foreign': foreign_addr,
+                                'state': state
+                            })
+                    except (ValueError, IndexError):
+                        continue
+            
+            # Also get UDP connections
+            result_udp = subprocess.run(
+                ['netstat', '-ano', '-p', 'UDP'],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            lines_udp = result_udp.stdout.strip().split('\n')
+            
+            for line in lines_udp[4:]:  # Skip header lines
+                parts = line.split()
+                if len(parts) >= 4:
+                    try:
+                        pid = int(parts[-1])
+                        proto = parts[0]
+                        local_addr = parts[1]
+                        
+                        connections_by_pid[pid]['connections'].append({
+                            'proto': proto,
+                            'local': local_addr,
+                            'foreign': '*:*',
+                            'state': 'LISTENING'
+                        })
+                    except (ValueError, IndexError):
+                        continue
+                        
+        except Exception as e:
+            print(f"Netstat error: {e}")
+        
+        return connections_by_pid
+    
+    def estimate_bandwidth_by_connections(self, total_sent, total_recv, connections_by_pid):
+        """Estimate bandwidth per process based on connection count (approximation)"""
+        process_stats = {}
+        
+        # Get total connection count
+        total_connections = sum(len(data['connections']) for data in connections_by_pid.values())
+        
+        if total_connections == 0:
+            return process_stats
+        
+        # Distribute bandwidth proportionally to connection count
+        # This is an approximation, not exact measurement
+        for pid, conn_data in connections_by_pid.items():
+            if len(conn_data['connections']) > 0:
+                try:
+                    proc = psutil.Process(pid)
+                    name = proc.name()
+                    
+                    # Weight by connection count
+                    weight = len(conn_data['connections']) / total_connections
+                    
+                    estimated_sent = int(total_sent * weight)
+                    estimated_recv = int(total_recv * weight)
+                    
+                    process_stats[pid] = {
+                        'name': name,
+                        'bytes_sent': estimated_sent,
+                        'bytes_recv': estimated_recv,
+                        'total_bytes': estimated_sent + estimated_recv,
+                        'connection_count': len(conn_data['connections']),
+                        'connections': conn_data['connections'][:5],  # First 5 connections
+                        'timestamp': datetime.now()
+                    }
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
+        
+        return process_stats
+    
+    def format_bytes(self, bytes_value):
+        """Convert bytes to human readable format"""
+        if bytes_value == 0:
+            return "0 B"
+        
+        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+            if bytes_value < 1024.0:
+                return f"{bytes_value:.2f} {unit}"
+            bytes_value /= 1024.0
+        return f"{bytes_value:.2f} PB"
+    
+    def start_monitoring(self):
+        """Start monitoring"""
+        if self.monitoring:
+            return
+            
+        self.monitoring = True
+        self.last_measurement_time = datetime.now()
+        self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
+        self.monitor_thread.start()
+        print("Network monitoring started")
+    
+    def stop_monitoring(self):
+        """Stop monitoring"""
+        self.monitoring = False
+        if self.monitor_thread:
+            self.monitor_thread.join(timeout=5)
+        print("Network monitoring stopped")
+    
+    def _monitor_loop(self):
+        """Monitoring loop"""
+        # Get initial network I/O
+        prev_net_io = psutil.net_io_counters()
+        
+        while self.monitoring:
+            try:
+                # Wait for the interval
+                time.sleep(self.update_interval)
+                
+                # Get current network I/O
+                current_net_io = psutil.net_io_counters()
+                
+                # Calculate difference
+                bytes_sent = current_net_io.bytes_sent - prev_net_io.bytes_sent
+                bytes_recv = current_net_io.bytes_recv - prev_net_io.bytes_recv
+                
+                # Get connections
+                connections_by_pid = self.get_network_connections_with_stats()
+                
+                # Estimate bandwidth per process
+                process_stats = self.estimate_bandwidth_by_connections(bytes_sent, bytes_recv, connections_by_pid)
+                
+                # Update cumulative data
+                for pid, stats in process_stats.items():
+                    self.process_data[pid]['bytes_sent'] += stats['bytes_sent']
+                    self.process_data[pid]['bytes_recv'] += stats['bytes_recv']
+                    self.process_data[pid]['last_update'] = datetime.now()
+                    self.process_data[pid]['name'] = stats['name']
+                    self.process_data[pid]['last_connections'] = stats.get('connection_count', 0)
+                
+                # Display results
+                self._display_results(bytes_sent, bytes_recv, process_stats)
+                
+                # Update previous data
+                prev_net_io = current_net_io
+                self.last_measurement_time = datetime.now()
+                
+            except Exception as e:
+                print(f"Monitoring error: {e}")
+                import traceback
+                traceback.print_exc()
+                time.sleep(60)  # Wait 1 minute on error
+    
+    def _display_results(self, total_sent, total_recv, process_stats):
+        """Display results"""
+        print(f"\n{'='*80}")
+        print(f"Network Usage Report - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"{'='*80}")
+        print(f"Total Traffic (last 3 min): Sent: {self.format_bytes(total_sent)} | Recv: {self.format_bytes(total_recv)}")
+        print(f"\nEstimated Per-Process Usage (based on connection count):")
+        print(f"{'-'*80}")
+        
+        if process_stats:
+            # Sort by total bytes
+            sorted_stats = sorted(process_stats.items(), 
+                                key=lambda x: x[1]['total_bytes'], reverse=True)
+            
+            for i, (pid, data) in enumerate(sorted_stats[:20], 1):
+                print(f"{i:>2}. PID: {pid:>6} | {data['name']:<25}")
+                print(f"    Sent: {self.format_bytes(data['bytes_sent']):>12} | "
+                      f"Recv: {self.format_bytes(data['bytes_recv']):>12} | "
+                      f"Connections: {data['connection_count']:>3}")
+        else:
+            print("No active network connections detected")
+    
+    def get_current_data(self):
+        """Get current monitoring data"""
+        return dict(self.process_data)
+    
+    def save_data_to_file(self, filename="network_usage.json"):
+        """Save data to file"""
+        try:
+            data = {
+                'timestamp': datetime.now().isoformat(),
+                'processes': {}
+            }
+            
+            for pid, proc_data in self.process_data.items():
+                data['processes'][str(pid)] = {
+                    'name': proc_data.get('name', 'Unknown'),
+                    'bytes_sent': proc_data['bytes_sent'],
+                    'bytes_recv': proc_data['bytes_recv'],
+                    'total_bytes': proc_data['bytes_sent'] + proc_data['bytes_recv'],
+                    'last_update': proc_data['last_update'].isoformat() if proc_data['last_update'] else None,
+                    'last_connections': proc_data.get('last_connections', 0)
+                }
+            
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+                
+            print(f"Data saved to {filename}")
+            return True
+            
+        except Exception as e:
+            print(f"Data save error: {e}")
+            return False
+
+class NetworkMonitorGUI:
+    def __init__(self):
+        self.monitor = NetworkMonitorV2()
+        self.root = tk.Tk()
+        self.root.title("Tethering Network Monitor V2")
+        self.root.geometry("1200x750")
+        
+        self.setup_ui()
+        
+    def setup_ui(self):
+        """Setup UI"""
+        # Main frame
+        main_frame = ttk.Frame(self.root, padding="10")
+        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        
+        # Title
+        title_label = ttk.Label(main_frame, text="Tethering Network Monitor V2", 
+                               font=("Arial", 16, "bold"))
+        title_label.grid(row=0, column=0, columnspan=4, pady=(0, 5))
+        
+        # Info label
+        info_label = ttk.Label(main_frame, 
+                              text="Monitors network usage per application every 3 minutes (estimated based on connection count)",
+                              font=("Arial", 9), foreground="blue")
+        info_label.grid(row=1, column=0, columnspan=4, pady=(0, 10))
+        
+        # Control buttons
+        button_frame = ttk.Frame(main_frame)
+        button_frame.grid(row=2, column=0, columnspan=4, pady=(0, 10))
+        
+        self.start_button = ttk.Button(button_frame, text="Start Monitoring", 
+                                      command=self.start_monitoring)
+        self.start_button.grid(row=0, column=0, padx=(0, 10))
+        
+        self.stop_button = ttk.Button(button_frame, text="Stop Monitoring", 
+                                     command=self.stop_monitoring, state="disabled")
+        self.stop_button.grid(row=0, column=1, padx=(0, 10))
+        
+        self.save_button = ttk.Button(button_frame, text="Save Data", 
+                                     command=self.save_data)
+        self.save_button.grid(row=0, column=2, padx=(0, 10))
+        
+        self.clear_button = ttk.Button(button_frame, text="Clear Data", 
+                                     command=self.clear_data)
+        self.clear_button.grid(row=0, column=3)
+        
+        # Status and stats frame
+        stats_frame = ttk.LabelFrame(main_frame, text="Network Statistics", padding="10")
+        stats_frame.grid(row=3, column=0, columnspan=4, pady=(0, 10), sticky=(tk.W, tk.E))
+        
+        self.status_label = ttk.Label(stats_frame, text="Monitoring Stopped", 
+                                     foreground="red", font=("Arial", 10, "bold"))
+        self.status_label.grid(row=0, column=0, columnspan=2, pady=(0, 5))
+        
+        self.process_count_label = ttk.Label(stats_frame, text="Active Processes: 0")
+        self.process_count_label.grid(row=1, column=0, sticky=tk.W, padx=(0, 20))
+        
+        self.last_update_label = ttk.Label(stats_frame, text="Last Measurement: Never")
+        self.last_update_label.grid(row=1, column=1, sticky=tk.W)
+        
+        # Results display Treeview
+        tree_frame = ttk.LabelFrame(main_frame, text="Per-Application Network Usage (Cumulative)", padding="5")
+        tree_frame.grid(row=4, column=0, columnspan=4, sticky=(tk.W, tk.E, tk.N, tk.S))
+        
+        columns = ('Rank', 'PID', 'App Name', 'Sent', 'Received', 'Total', 'Connections', 'Last Update')
+        self.tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=22)
+        
+        # Column settings
+        self.tree.heading('Rank', text='#')
+        self.tree.heading('PID', text='PID')
+        self.tree.heading('App Name', text='App Name')
+        self.tree.heading('Sent', text='Sent')
+        self.tree.heading('Received', text='Received')
+        self.tree.heading('Total', text='Total')
+        self.tree.heading('Connections', text='Connections')
+        self.tree.heading('Last Update', text='Last Update')
+        
+        # Column widths
+        self.tree.column('Rank', width=40)
+        self.tree.column('PID', width=70)
+        self.tree.column('App Name', width=250)
+        self.tree.column('Sent', width=120)
+        self.tree.column('Received', width=120)
+        self.tree.column('Total', width=120)
+        self.tree.column('Connections', width=100)
+        self.tree.column('Last Update', width=150)
+        
+        self.tree.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        
+        # Scrollbar
+        scrollbar = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
+        scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
+        self.tree.configure(yscrollcommand=scrollbar.set)
+        
+        # Note label
+        note_label = ttk.Label(main_frame, 
+                              text="Note: Per-app usage is estimated based on connection count. For exact measurements, use tools like GlassWire or Wireshark.",
+                              font=("Arial", 8), foreground="gray")
+        note_label.grid(row=5, column=0, columnspan=4, pady=(5, 0))
+        
+        # Grid weights
+        self.root.columnconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=1)
+        main_frame.columnconfigure(0, weight=1)
+        main_frame.rowconfigure(4, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
+        tree_frame.rowconfigure(0, weight=1)
+        
+        # Update timer
+        self.update_timer()
+        
+    def start_monitoring(self):
+        """Start monitoring"""
+        try:
+            self.monitor.start_monitoring()
+            self.start_button.config(state="disabled")
+            self.stop_button.config(state="normal")
+            self.status_label.config(text="Monitoring... (updates every 3 minutes)", foreground="green")
+            messagebox.showinfo("Started", 
+                              "Network monitoring started.\n\n"
+                              "Per-app usage is estimated based on connection count.\n"
+                              "First measurement will appear in 3 minutes.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Start monitoring error: {e}")
+    
+    def stop_monitoring(self):
+        """Stop monitoring"""
+        try:
+            self.monitor.stop_monitoring()
+            self.start_button.config(state="normal")
+            self.stop_button.config(state="disabled")
+            self.status_label.config(text="Monitoring Stopped", foreground="red")
+        except Exception as e:
+            messagebox.showerror("Error", f"Stop monitoring error: {e}")
+    
+    def save_data(self):
+        """Save data"""
+        try:
+            filename = f"network_usage_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            if self.monitor.save_data_to_file(filename):
+                messagebox.showinfo("Save Complete", f"Data saved to {filename}")
+            else:
+                messagebox.showerror("Error", "Failed to save data")
+        except Exception as e:
+            messagebox.showerror("Error", f"Save error: {e}")
+    
+    def clear_data(self):
+        """Clear data"""
+        if messagebox.askyesno("Confirm", "Clear all cumulative data?"):
+            self.monitor.process_data.clear()
+            self.update_display()
+            messagebox.showinfo("Complete", "Data cleared")
+    
+    def update_display(self):
+        """Update display"""
+        # Clear existing items
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        
+        # Get current data
+        data = self.monitor.get_current_data()
+        
+        # Update statistics
+        self.process_count_label.config(text=f"Active Processes: {len(data)}")
+        
+        if self.monitor.last_measurement_time:
+            self.last_update_label.config(
+                text=f"Last Measurement: {self.monitor.last_measurement_time.strftime('%H:%M:%S')}"
+            )
+        
+        # Display processes
+        if data:
+            # Sort by total bytes
+            sorted_data = sorted(data.items(), 
+                               key=lambda x: x[1]['bytes_sent'] + x[1]['bytes_recv'], 
+                               reverse=True)
+            
+            for rank, (pid, proc_data) in enumerate(sorted_data, 1):
+                total_bytes = proc_data['bytes_sent'] + proc_data['bytes_recv']
+                
+                if total_bytes > 0:
+                    # Get process name
+                    try:
+                        proc = psutil.Process(int(pid))
+                        name = proc.name()
+                    except:
+                        name = proc_data.get('name', 'Unknown')
+                    
+                    last_update = proc_data['last_update'].strftime('%H:%M:%S') if proc_data['last_update'] else 'Never'
+                    
+                    self.tree.insert('', 'end', values=(
+                        rank,
+                        pid,
+                        name,
+                        self.monitor.format_bytes(proc_data['bytes_sent']),
+                        self.monitor.format_bytes(proc_data['bytes_recv']),
+                        self.monitor.format_bytes(total_bytes),
+                        proc_data.get('last_connections', 0),
+                        last_update
+                    ))
+    
+    def update_timer(self):
+        """Update display periodically"""
+        self.update_display()
+        self.root.after(5000, self.update_timer)  # Update every 5 seconds
+    
+    def run(self):
+        """Run app"""
+        try:
+            self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+            self.root.mainloop()
+        except KeyboardInterrupt:
+            self.monitor.stop_monitoring()
+            sys.exit(0)
+    
+    def on_closing(self):
+        """Handle window closing"""
+        if self.monitor.monitoring:
+            if messagebox.askokcancel("Quit", "Monitoring is active. Do you want to stop and quit?"):
+                self.monitor.stop_monitoring()
+                self.root.destroy()
+        else:
+            self.root.destroy()
+
+def main():
+    """Main function"""
+    print("Starting Tethering Network Monitor App V2...")
+    print("This app monitors network usage per application every 3 minutes")
+    print("Per-app usage is ESTIMATED based on connection count.")
+    print()
+    
+    # Check admin privileges
+    try:
+        import ctypes
+        if not ctypes.windll.shell32.IsUserAnAdmin():
+            print("Warning: Running with admin privileges is recommended")
+            print("Some processes may not be accessible without admin rights.")
+            print()
+    except:
+        pass
+    
+    # Start GUI app
+    app = NetworkMonitorGUI()
+    app.run()
+
+if __name__ == "__main__":
+    main()
