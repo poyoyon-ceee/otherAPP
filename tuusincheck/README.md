@@ -1,181 +1,229 @@
-# Tethering Network Monitor App
+# テザリング通信量監視アプリ
 
-A Windows 11 application that monitors network usage of applications during tethering every 3 minutes.
+Windows 11上でテザリング中のアプリ通信量を監視するアプリケーション
 
-## Features
+## 📁 ファイル構成
 
-- **Real-time Monitoring**: Monitor network usage of each process every 3 minutes
-- **GUI Display**: Intuitive graphical interface to display network usage
-- **Data Saving**: Save monitoring data in JSON format
-- **Cumulative Statistics**: Track cumulative network usage per application
-- **Auto Update**: Automatically update display every 5 seconds
+### メインファイル
+- **【最終版】完璧な起動_管理者.vbs** - メイン起動ファイル（推奨）
+- **【最終版】完璧な起動.vbs** - 通常版（管理者権限なし）
+- **network_monitor_v2.py** - メインプログラム
+- **install.bat** - 依存関係インストール
+- **requirements.txt** - 必要なパッケージリスト
 
-## System Requirements
+### 調査ツール
+- **Chrome通信調査.bat** - Chrome通信の詳細分析
+- **大容量通信調査_修正版.bat** - 大容量通信の特定（5分間監視）
+- **長時間通信調査.bat** - 長時間監視（30分間）
+- **タスクマネージャー活用ガイド.bat** - タスクマネージャーとの連携方法
 
-- Windows 11
-- Python 3.8 or higher
-- Administrator privileges (recommended)
+### ドキュメント
+- **README.md** - このファイル
 
-## Installation
+## 🚀 クイックスタート
 
-### 1. Install Python
-If Python 3.8 or higher is not installed, download and install from [Python official website](https://www.python.org/downloads/).
-
-### 2. Install Dependencies
-Use one of the following methods to install dependencies:
-
-#### Method A: Use batch file (recommended)
+### 1. 初回セットアップ
 ```cmd
 install.bat
 ```
 
-#### Method B: Manual installation
-```cmd
-pip install -r requirements.txt
+### 2. アプリ起動
+**【最終版】完璧な起動_管理者.vbs** をダブルクリック
+- UAC確認で「はい」をクリック
+- GUIウィンドウがタスクバーに表示
+- プロンプト画面は一切表示されない
+
+### 3. 監視開始
+1. GUIで「Start Monitoring」をクリック
+2. 監視間隔を選択（30秒/1分/3分/5分）
+3. 監視開始
+
+## 📊 主な機能
+
+### メイン機能
+- **リアルタイム監視**: 選択した間隔（30秒〜5分）で通信量をチェック
+- **プロセスごとの表示**: 各アプリの推定通信量を表示
+- **累積データ**: アプリごとの累積通信量を記録
+- **サイレントモード**: ポップアップメッセージを抑制
+- **データ保存**: JSON形式でエクスポート
+
+### 特徴
+- ✅ プロンプト画面が一切表示されない
+- ✅ 更新時のチラつきゼロ
+- ✅ 最小化してもタスクバーに残る
+- ✅ 管理者権限で全プロセス監視
+
+## 🔧 システム要件
+
+- Windows 11
+- Python 3.8以上
+- 管理者権限（推奨）
+
+## 📖 使用方法
+
+### 基本的な使い方
+
+#### 日常監視
+```
+1. 【最終版】完璧な起動_管理者.vbs をダブルクリック
+2. 「Start Monitoring」をクリック
+3. 監視間隔を選択（推奨: 1分）
+4. 最小化して作業継続
+5. 必要時にタスクバーから復元
 ```
 
-## Usage
-
-### 起動方法の選択
-
-#### 方法1: 独立起動（推奨）⭐
-PowerShellやコマンドプロンプトを閉じてもアプリが動作し続けます。
-
-**通常モード:**
-- `独立起動.bat` をダブルクリック
-- または `独立起動.vbs` をダブルクリック
-
-**管理者モード（推奨）:**
-- `独立起動(管理者).bat` をダブルクリック
-- または `独立起動(管理者).vbs` をダブルクリック
-
-#### 方法2: 通常起動
-PowerShellやコマンドプロンプトを閉じるとアプリも終了します。
-
-```cmd
-テザリング通信量チェック(管理者).bat
+#### データ確認
+```
+1. タスクバーのアイコンをクリックでGUI表示
+2. 通信量ランキングを確認
+3. 「Save Data」でエクスポート
+4. 再度最小化
 ```
 
-#### 方法3: コマンドライン
-```cmd
-python network_monitor_v2.py
+### 調査ツールの使い方
+
+#### Chrome通信調査
 ```
-または
-```cmd
-pythonw network_monitor_v2.py  # ウィンドウなし
-```
-
-### 2. Start Monitoring
-1. Click "Start Monitoring" button
-2. Network usage of each app will be monitored every 3 minutes
-3. Results will be displayed in real-time
-
-### 3. Save Data
-- Click "Save Data" button to save monitoring data to JSON file
-- Files are saved with format: `network_usage_YYYYMMDD_HHMMSS.json`
-
-### 4. Stop Monitoring
-- Click "Stop Monitoring" button to stop monitoring
-- Click "Clear Data" button to reset cumulative data
-
-## Display Items
-
-| Item | Description |
-|------|-------------|
-| PID | Process ID |
-| App Name | Process name |
-| Sent | Bytes sent |
-| Received | Bytes received |
-| Total | Total (sent + received) |
-| Last Update | Last update time |
-
-## File Structure
-
-```
-tuusincheck/
-├── network_monitor.py    # Main application
-├── requirements.txt     # Dependencies
-├── install.bat         # Installation script
-├── start_app.bat       # App launcher
-└── README.md           # This file
+Chrome通信調査.bat を実行
+→ Chromeの詳細な通信情報を表示
+→ プロセスタイプ・接続先を確認
 ```
 
-## Notes
-
-### Security
-- Running with administrator privileges is recommended
-- Some processes may not be monitored due to access permissions
-
-### Performance
-- Slight CPU usage during monitoring
-- Memory usage may increase during long-term monitoring
-
-### Tethering Environment
-- Most effective when used during tethering
-- Can also be used with regular Wi-Fi connections, but particularly useful for tethering data limit management
-
-## Troubleshooting
-
-### Common Issues
-
-#### 1. "psutil" module not found
-```cmd
-pip install psutil
+#### 大容量通信調査
+```
+大容量通信調査_修正版.bat を実行
+→ 5分間監視して10MB以上の通信を検出
+→ 疑わしいプロセスを特定
 ```
 
-#### 2. Administrator privilege error
-- Run Command Prompt as Administrator
-- Or run PowerShell as Administrator
-
-#### 3. Some processes not displayed
-- Run with administrator privileges
-- System processes may not be displayed
-
-#### 4. Cannot start monitoring
-- May conflict with other network monitoring software
-- Temporarily stop other monitoring software
-
-## Technical Specifications
-
-### Monitoring Interval
-- Data collection: 3 minutes
-- Display update: 5 seconds
-
-### Data Format
-JSON file format:
-```json
-{
-  "timestamp": "2024-01-01T12:00:00",
-  "total_usage": {
-    "1234": {
-      "bytes_sent": 1024000,
-      "bytes_recv": 2048000
-    }
-  }
-}
+#### 長時間通信調査
+```
+長時間通信調査.bat を実行
+→ 30分間監視して50MB以上の通信を検出
+→ 時間帯別の通信量を分析
 ```
 
-### Supported Protocols
-- TCP
-- UDP
-- Other network protocols
+## 💡 監視間隔の選び方
 
-## License
+| 間隔 | CPU負荷 | 精度 | 推奨用途 |
+|------|---------|------|----------|
+| 30秒 | 中 | 高 | リアルタイム分析 |
+| **1分** | 低 | 高 | **日常使用（推奨）** |
+| 3分 | 極小 | 中 | 軽量モード |
+| 5分 | 最小 | 中 | バッテリー節約 |
 
-This application is provided under the MIT License.
+## 🔍 データの見方
 
-## Support
+### メイン画面の表示項目
 
-If you encounter issues, please contact with the following information:
-- Windows 11 version
-- Python version
-- Error messages
-- Execution environment details
+- **Rank**: 通信量ランキング
+- **PID**: プロセスID
+- **App Name**: アプリケーション名
+- **Sent**: 送信データ量
+- **Received**: 受信データ量
+- **Total**: 合計データ量
+- **Connections**: 接続数
+- **Last Update**: 最終更新時刻
 
-## Update History
+### 通信量の推定方法
 
-### v1.0.0 (2024-01-01)
-- Initial release
-- Basic network usage monitoring
-- GUI interface
-- Data saving functionality
+このアプリは接続数に基づいて通信量を推定します：
+- システム全体の通信量を測定
+- 各プロセスの接続数をカウント
+- 接続数の比率で通信量を配分
+
+**注意**: 推定値であり、正確な測定ではありません。
+
+## 📋 よくある質問
+
+### Q: 最小化したらタスクバーから消える
+A: 【最終版】完璧な起動_管理者.vbs を使用してください。最小化してもタスクバーに残ります。
+
+### Q: 更新時にプロンプトがチラつく
+A: network_monitor_v2.pyが修正済みです。チラつきは発生しません。
+
+### Q: 管理者権限は必要？
+A: 推奨です。一部のシステムプロセスは管理者権限がないと監視できません。
+
+### Q: タスクマネージャーとの違いは？
+A: 
+- タスクマネージャー: 長期傾向（30日間）
+- このアプリ: リアルタイム監視（カスタマイズ可能）
+- 両方を組み合わせるのが最適
+
+## ⚙️ トラブルシューティング
+
+### 起動しない
+```
+1. Pythonがインストールされているか確認
+2. install.bat を実行
+3. エラーログ（launch_error.log）を確認
+```
+
+### プロセスが表示されない
+```
+1. 管理者権限で起動しているか確認
+2. 監視を開始しているか確認
+3. 数分待ってデータが更新されるか確認
+```
+
+### 通信量が表示されない
+```
+1. インターネット接続を確認
+2. 他のアプリが通信しているか確認
+3. 監視間隔を短く設定（1分に変更）
+```
+
+## 🎯 推奨ワークフロー
+
+### 日常使用
+```
+朝: 【最終版】完璧な起動_管理者.vbs で起動
+  → 監視開始
+  → 最小化
+
+日中: 通常作業
+  → バックグラウンドで監視継続
+
+気になった時: タスクバーから復元
+  → データ確認
+  → 必要に応じて調査ツール実行
+
+夜: データ保存
+  → アプリ終了
+```
+
+### 問題調査
+```
+1. タスクマネージャーで長期傾向を確認
+2. このアプリで現在の通信状況を確認
+3. 異常があれば調査ツール実行:
+   - Chrome問題 → Chrome通信調査.bat
+   - 大容量通信 → 大容量通信調査_修正版.bat
+   - 長期分析 → 長時間通信調査.bat
+4. 対策実施
+```
+
+## 📝 バージョン履歴
+
+### v2.0 (最終版)
+- 更新時のチラつき完全解消
+- タスクバー常駐機能追加
+- 不要ファイル整理
+- 完璧な動作を実現
+
+### v1.0
+- 初回リリース
+- 基本的な監視機能
+
+## 📄 ライセンス
+
+このアプリケーションはMITライセンスの下で提供されています。
+
+## 🙏 サポート
+
+問題が発生した場合は、以下の情報を含めてお問い合わせください：
+- Windows 11のバージョン
+- Pythonのバージョン
+- エラーメッセージ
+- 実行環境の詳細

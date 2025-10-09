@@ -18,6 +18,20 @@ from tkinter import ttk, messagebox
 import sys
 import subprocess
 
+# Windows用の定数（コンソールウィンドウを非表示にするため）
+if not hasattr(subprocess, 'CREATE_NO_WINDOW'):
+    subprocess.CREATE_NO_WINDOW = 0x08000000
+
+# システムトレイ用ライブラリ
+try:
+    from PIL import Image, ImageDraw
+    import pystray
+    HAS_PYSTRAY = True
+except ImportError:
+    HAS_PYSTRAY = False
+    print("警告: pystray/Pillowがインストールされていません。システムトレイ機能は無効です。")
+    print("インストール: pip install pystray Pillow")
+
 class NetworkMonitorV2:
     def __init__(self, update_interval=180):
         self.monitoring = False
@@ -40,11 +54,18 @@ class NetworkMonitorV2:
         try:
             # Use netstat to get connection statistics
             # This is more reliable on Windows
+            # CREATE_NO_WINDOW flag to prevent console window from appearing
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = 0  # SW_HIDE
+            
             result = subprocess.run(
                 ['netstat', '-ano', '-p', 'TCP'],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
+                startupinfo=startupinfo,
+                creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
             )
             
             lines = result.stdout.strip().split('\n')
@@ -74,7 +95,9 @@ class NetworkMonitorV2:
                 ['netstat', '-ano', '-p', 'UDP'],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
+                startupinfo=startupinfo,
+                creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
             )
             
             lines_udp = result_udp.stdout.strip().split('\n')
@@ -274,23 +297,50 @@ class NetworkMonitorGUI:
         self.root.geometry("1200x750")
         self.silent_mode = silent_mode  # Silent mode suppresses popups
         self.is_minimized = False  # Track minimized state
+        self.tray_icon = None  # System tray icon
         
         # Prevent window from flashing when minimized
         self.root.attributes('-topmost', False)
         
-        # Windows specific: Prevent window from stealing focus
+        # Windows specific: Force taskbar icon to persist
         try:
             import ctypes
-            # Hide from taskbar initially if starting minimized
-            if silent_mode:
-                self.root.attributes('-alpha', 0.0)  # Invisible initially
-                self.root.after(100, lambda: self.root.attributes('-alpha', 1.0))
-        except:
-            pass
+            # Set proper window style to ensure taskbar icon persists
+            GWL_EXSTYLE = -20
+            WS_EX_APPWINDOW = 0x00040000
+            
+            # Wait for window to be created
+            self.root.update_idletasks()
+            
+            # Get window handle
+            hwnd = ctypes.windll.user32.GetParent(self.root.winfo_id())
+            if not hwnd:
+                hwnd = self.root.winfo_id()
+            
+            if hwnd:
+                # Ensure window appears in taskbar
+                current_style = ctypes.windll.user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+                ctypes.windll.user32.SetWindowLongW(hwnd, GWL_EXSTYLE, current_style | WS_EX_APPWINDOW)
+                
+                # Force window to show in taskbar
+                ctypes.windll.user32.ShowWindow(hwnd, 5)  # SW_SHOW
+        except Exception as e:
+            print(f"Taskbar icon setup warning: {e}")
+        
+        # Setup system tray icon
+        if HAS_PYSTRAY:
+            self.setup_tray_icon()
         
         # Bind minimize/restore events
         self.root.bind('<Unmap>', self.on_minimize)
         self.root.bind('<Map>', self.on_restore)
+        
+        # Override window close to minimize to tray instead
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        
+        # Override iconify to minimize to tray
+        self.original_iconify = self.root.iconify
+        self.root.iconify = self.custom_iconify
         
         self.setup_ui()
         
@@ -428,15 +478,134 @@ class NetworkMonitorGUI:
         # Update timer
         self.update_timer()
     
+    def setup_tray_icon(self):
+        """Setup system tray icon"""
+        if not HAS_PYSTRAY:
+            return
+        
+        # Create icon image
+        image = self.create_tray_icon_image()
+        
+        # Create menu
+        menu = pystray.Menu(
+            pystray.MenuItem("表示", self.show_window, default=True),
+            pystray.MenuItem("最小化", self.hide_to_tray),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem("監視開始", self.start_monitoring_from_tray),
+            pystray.MenuItem("監視停止", self.stop_monitoring_from_tray),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem("終了", self.quit_app)
+        )
+        
+        # Create tray icon
+        self.tray_icon = pystray.Icon("network_monitor", image, "通信量監視", menu)
+        
+        # Run tray icon in separate thread
+        threading.Thread(target=self.tray_icon.run, daemon=True).start()
+    
+    def create_tray_icon_image(self):
+        """Create system tray icon image"""
+        # Create a simple icon
+        width = 64
+        height = 64
+        image = Image.new('RGB', (width, height), color='white')
+        dc = ImageDraw.Draw(image)
+        
+        # Draw network icon
+        dc.rectangle([10, 10, 54, 54], outline='blue', width=3)
+        dc.line([20, 40, 30, 25, 40, 35, 50, 20], fill='green', width=3)
+        
+        return image
+    
+    def show_window(self, icon=None, item=None):
+        """Show window from system tray"""
+        self.root.deiconify()
+        self.root.lift()
+        self.is_minimized = False
+    
+    def hide_to_tray(self, icon=None, item=None):
+        """Hide window to system tray"""
+        if HAS_PYSTRAY:
+            self.root.withdraw()
+            self.is_minimized = True
+        else:
+            self.root.iconify()
+            self.is_minimized = True
+    
+    def start_monitoring_from_tray(self, icon=None, item=None):
+        """Start monitoring from tray menu"""
+        if not self.monitor.monitoring:
+            self.root.after(0, lambda: self.start_button.invoke())
+    
+    def stop_monitoring_from_tray(self, icon=None, item=None):
+        """Stop monitoring from tray menu"""
+        if self.monitor.monitoring:
+            self.root.after(0, lambda: self.stop_button.invoke())
+    
+    def quit_app(self, icon=None, item=None):
+        """Quit application"""
+        self.monitor.stop_monitoring()
+        if self.tray_icon:
+            self.tray_icon.stop()
+        self.root.quit()
+        self.root.destroy()
+        sys.exit(0)
+    
+    def custom_iconify(self):
+        """Custom iconify - minimize to system tray"""
+        self.is_minimized = True
+        if HAS_PYSTRAY:
+            # Minimize to tray instead of taskbar
+            self.hide_to_tray()
+        else:
+            # Fallback to normal minimize
+            self.original_iconify()
+    
     def on_minimize(self, event):
         """Handle minimize event"""
         if event.widget == self.root:
             self.is_minimized = True
+            # When minimized, hide to tray if available
+            if HAS_PYSTRAY:
+                self.root.after(100, self.hide_to_tray)
     
     def on_restore(self, event):
         """Handle restore event"""
         if event.widget == self.root:
             self.is_minimized = False
+    
+    def on_closing(self):
+        """Handle window close button - minimize to tray instead of closing"""
+        if HAS_PYSTRAY:
+            # Minimize to tray instead of closing
+            if not self.silent_var.get():
+                result = messagebox.askyesnocancel(
+                    "最小化", 
+                    "システムトレイに最小化しますか？\n\n"
+                    "はい: トレイに最小化\n"
+                    "いいえ: アプリを終了\n"
+                    "キャンセル: 何もしない"
+                )
+                if result is True:  # Yes - minimize to tray
+                    self.hide_to_tray()
+                elif result is False:  # No - quit
+                    if self.monitor.monitoring:
+                        self.monitor.stop_monitoring()
+                    self.quit_app()
+                # None (Cancel) - do nothing
+            else:
+                # Silent mode - always minimize to tray
+                self.hide_to_tray()
+        else:
+            # No tray support - ask to quit
+            if self.monitor.monitoring:
+                if messagebox.askokcancel("終了", "監視中です。終了しますか？"):
+                    self.monitor.stop_monitoring()
+                    self.root.quit()
+                    self.root.destroy()
+            else:
+                self.root.quit()
+                self.root.destroy()
     
     def on_interval_change(self):
         """Handle interval change"""
@@ -620,24 +789,13 @@ class NetworkMonitorGUI:
     def run(self):
         """Run app"""
         try:
-            self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
-            
             # Prevent focus stealing after window is created
             self.root.after(500, self.prevent_focus_stealing)
             
             self.root.mainloop()
         except KeyboardInterrupt:
-            self.monitor.stop_monitoring()
+            self.quit_app()
             sys.exit(0)
-    
-    def on_closing(self):
-        """Handle window closing"""
-        if self.monitor.monitoring:
-            if messagebox.askokcancel("Quit", "Monitoring is active. Do you want to stop and quit?"):
-                self.monitor.stop_monitoring()
-                self.root.destroy()
-        else:
-            self.root.destroy()
 
 def main():
     """Main function"""
