@@ -273,9 +273,24 @@ class NetworkMonitorGUI:
         self.root.title("Tethering Network Monitor V2")
         self.root.geometry("1200x750")
         self.silent_mode = silent_mode  # Silent mode suppresses popups
+        self.is_minimized = False  # Track minimized state
         
         # Prevent window from flashing when minimized
         self.root.attributes('-topmost', False)
+        
+        # Windows specific: Prevent window from stealing focus
+        try:
+            import ctypes
+            # Hide from taskbar initially if starting minimized
+            if silent_mode:
+                self.root.attributes('-alpha', 0.0)  # Invisible initially
+                self.root.after(100, lambda: self.root.attributes('-alpha', 1.0))
+        except:
+            pass
+        
+        # Bind minimize/restore events
+        self.root.bind('<Unmap>', self.on_minimize)
+        self.root.bind('<Map>', self.on_restore)
         
         self.setup_ui()
         
@@ -413,6 +428,16 @@ class NetworkMonitorGUI:
         # Update timer
         self.update_timer()
     
+    def on_minimize(self, event):
+        """Handle minimize event"""
+        if event.widget == self.root:
+            self.is_minimized = True
+    
+    def on_restore(self, event):
+        """Handle restore event"""
+        if event.widget == self.root:
+            self.is_minimized = False
+    
     def on_interval_change(self):
         """Handle interval change"""
         if self.monitor.monitoring:
@@ -517,6 +542,10 @@ class NetworkMonitorGUI:
     
     def update_display(self):
         """Update display"""
+        # Skip update if minimized to prevent focus stealing
+        if self.is_minimized:
+            return
+        
         # Clear existing items
         for item in self.tree.get_children():
             self.tree.delete(item)
@@ -565,13 +594,37 @@ class NetworkMonitorGUI:
     
     def update_timer(self):
         """Update display periodically"""
-        self.update_display()
+        # Only update display if not minimized
+        if not self.is_minimized:
+            self.update_display()
         self.root.after(5000, self.update_timer)  # Update every 5 seconds
+    
+    def prevent_focus_stealing(self):
+        """Prevent window from stealing focus on Windows"""
+        try:
+            import ctypes
+            from ctypes import wintypes
+            
+            # Get window handle
+            hwnd = ctypes.windll.user32.GetParent(self.root.winfo_id())
+            if hwnd:
+                # Set window style to prevent activation
+                GWL_EXSTYLE = -20
+                WS_EX_NOACTIVATE = 0x08000000
+                
+                current_style = ctypes.windll.user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+                ctypes.windll.user32.SetWindowLongW(hwnd, GWL_EXSTYLE, current_style | WS_EX_NOACTIVATE)
+        except Exception as e:
+            print(f"Focus prevention setup failed (non-critical): {e}")
     
     def run(self):
         """Run app"""
         try:
             self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+            
+            # Prevent focus stealing after window is created
+            self.root.after(500, self.prevent_focus_stealing)
+            
             self.root.mainloop()
         except KeyboardInterrupt:
             self.monitor.stop_monitoring()

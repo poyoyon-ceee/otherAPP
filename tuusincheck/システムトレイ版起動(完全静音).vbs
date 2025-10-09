@@ -8,9 +8,9 @@ strScriptPath = objFSO.GetParentFolderName(WScript.ScriptFullName)
 objShell.CurrentDirectory = strScriptPath
 
 ' Pythonスクリプトのパスを構築
-strPythonScript = strScriptPath & "\network_monitor_v2.py"
+strPythonScript = strScriptPath & "\network_monitor_v3.py"
 
-' サイレントモード＆最小化でバックグラウンド実行（ウィンドウ完全非表示）
+' 完全にバックグラウンドで実行（ウィンドウ非表示、フォーカス奪取なし）
 objShell.Run "pythonw """ & strPythonScript & """ --silent --minimized", 0, False
 
 Set objShell = Nothing

@@ -11,7 +11,7 @@ strTempBat = objFSO.GetSpecialFolder(2) & "\network_monitor_launcher.bat"
 Set objFile = objFSO.CreateTextFile(strTempBat, True)
 objFile.WriteLine "@echo off"
 objFile.WriteLine "cd /d """ & strScriptPath & """"
-objFile.WriteLine "pythonw network_monitor_v2.py --silent --minimized"
+objFile.WriteLine "pythonw network_monitor_v3.py --silent --minimized"
 objFile.Close
 
 ' 管理者権限で実行（ウィンドウは非表示）
