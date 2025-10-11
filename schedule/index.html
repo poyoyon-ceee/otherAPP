@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スケジュールバー</title>
+    <style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 30px;
+}
+
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.left-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.right-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.view-toggle {
+    display: flex;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.toggle-btn {
+    padding: 8px 20px;
+    border: none;
+    background: transparent;
+    color: white;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.3s;
+    font-size: 14px;
+}
+
+.toggle-btn.active {
+    background: white;
+    color: #667eea;
+    font-weight: bold;
+}
+
+.year-selector,
+.month-selector {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 8px 15px;
+    border-radius: 8px;
+}
+
+.nav-btn {
+    background: rgba(255, 255, 255, 0.3);
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.year-display,
+.month-display {
+    font-size: 18px;
+    font-weight: bold;
+    min-width: 80px;
+    text-align: center;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5568d3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+}
+
+.btn-info {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-info:hover {
+    background: #138496;
+}
+
+.schedule-container {
+    padding: 20px 30px;
+    overflow-x: auto;
+}
+
+.schedule-wrapper {
+    display: flex;
+    min-width: 100%;
+}
+
+.items-column {
+    min-width: 200px;
+    border-right: 2px solid #dee2e6;
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 10;
+}
+
+.items-header {
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.item-row {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 14px;
+    position: relative;
+    cursor: move;
+    transition: background 0.2s;
+}
+
+.item-row:hover {
+    background: #f8f9fa;
+}
+
+.item-row.dragging {
+    opacity: 0.5;
+    background: #e9ecef;
+}
+
+.item-row.drag-over {
+    border-top: 3px solid #667eea;
+}
+
+.item-name {
+    flex: 1;
+    padding: 5px;
+    cursor: pointer;
+}
+
+.item-name:hover {
+    background: #e9ecef;
+    border-radius: 3px;
+}
+
+.item-delete-btn {
+    background: #dc3545;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    transition: all 0.2s;
+    margin-left: 5px;
+}
+
+.item-delete-btn:hover {
+    background: #c82333;
+}
+
+.schedule-delete-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(220, 53, 69, 0.9);
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.schedule-bar:hover .schedule-delete-btn {
+    opacity: 1;
+}
+
+.schedule-repeat-icon {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.timeline-column {
+    flex: 1;
+    overflow-x: auto;
+}
+
+.timeline-header {
+    height: 50px;
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.timeline-cell {
+    min-width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 500;
+    border-right: 1px solid #e9ecef;
+    position: relative;
+}
+
+.timeline-cell.month-header {
+    min-width: 90px;
+    font-weight: bold;
+}
+
+.timeline-cell.saturday {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.timeline-cell.sunday,
+.timeline-cell.holiday {
+    background: #ffebee;
+    color: #d32f2f;
+}
+
+.timeline-body {
+    position: relative;
+}
+
+.timeline-row {
+    height: 60px;
+    display: flex;
+    border-bottom: 1px solid #e9ecef;
+    position: relative;
+}
+
+.timeline-grid-cell {
+    min-width: 80px;
+    border-right: 1px solid #f1f3f5;
+}
+
+.timeline-grid-cell.saturday {
+    background: #e3f2fd;
+}
+
+.timeline-grid-cell.sunday,
+.timeline-grid-cell.holiday {
+    background: #ffebee;
+}
+
+.schedule-bar {
+    position: absolute;
+    height: 40px;
+    top: 10px;
+    background: #3498db;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.schedule-bar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+.schedule-bar-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+/* モーダル */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.input-field {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 14px;
+    margin-bottom: 15px;
+    transition: border-color 0.3s;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.date-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.date-inputs label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #495057;
+}
+
+.color-picker {
+    margin-bottom: 15px;
+}
+
+.color-picker label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #495057;
+}
+
+.color-picker input {
+    width: 100px;
+    height: 40px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.repeat-settings {
+    margin-bottom: 15px;
+}
+
+.repeat-settings label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #495057;
+}
+
+#repeatCountContainer {
+    margin-bottom: 15px;
+}
+
+#repeatCountContainer label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #495057;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+    .controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .toolbar {
+        flex-wrap: wrap;
+    }
+
+    .items-column {
+        min-width: 150px;
+    }
+
+    .timeline-cell {
+        min-width: 60px;
+        font-size: 10px;
+    }
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="controls">
+                <div class="left-controls">
+                    <div class="view-toggle">
+                        <button class="toggle-btn active" data-view="year">年間</button>
+                        <button class="toggle-btn" data-view="month">月間</button>
+                    </div>
+                    <div class="year-selector">
+                        <button id="prevYear" class="nav-btn">◀</button>
+                        <span id="currentYear" class="year-display">２０２５</span>
+                        <button id="nextYear" class="nav-btn">▶</button>
+                    </div>
+                    <div class="month-selector" style="display: none;">
+                        <button id="prevMonth" class="nav-btn">◀</button>
+                        <span id="currentMonth" class="month-display">２０２５年１０月</span>
+                        <button id="nextMonth" class="nav-btn">▶</button>
+                    </div>
+                </div>
+                <div class="right-controls">
+                    <button id="addItemBtn" class="btn btn-primary">項目を追加</button>
+                    <button id="addScheduleBtn" class="btn btn-secondary">スケジュールを追加</button>
+                    <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+                    <button id="importBtn" class="btn btn-info">CSV取込</button>
+                    <button id="exportBtn" class="btn btn-info">CSV出力</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="schedule-container">
+            <div class="schedule-wrapper">
+                <div class="items-column">
+                    <div class="items-header">項目</div>
+                    <div class="items-list" id="itemsList">
+                        <!-- 項目がここに表示されます -->
+                    </div>
+                </div>
+                <div class="timeline-column">
+                    <div class="timeline-header" id="timelineHeader">
+                        <!-- タイムラインヘッダーがここに表示されます -->
+                    </div>
+                    <div class="timeline-body" id="timelineBody">
+                        <!-- スケジュールバーがここに表示されます -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 項目追加モーダル -->
+    <div id="itemModal" class="modal">
+        <div class="modal-content">
+            <h2>項目を追加</h2>
+            <input type="text" id="itemName" placeholder="項目名を入力" class="input-field">
+            <div class="modal-actions">
+                <button id="saveItemBtn" class="btn btn-primary">保存</button>
+                <button id="cancelItemBtn" class="btn btn-secondary">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- スケジュール追加モーダル -->
+    <div id="scheduleModal" class="modal">
+        <div class="modal-content">
+            <h2>スケジュールを追加</h2>
+            <select id="scheduleItem" class="input-field">
+                <option value="">項目を選択</option>
+            </select>
+            <div class="date-inputs">
+                <div>
+                    <label>開始日</label>
+                    <input type="date" id="startDate" class="input-field">
+                </div>
+                <div>
+                    <label>終了日</label>
+                    <input type="date" id="endDate" class="input-field">
+                </div>
+            </div>
+            <input type="text" id="scheduleTitle" placeholder="スケジュールのタイトル" class="input-field">
+            <div class="color-picker">
+                <label>カラー</label>
+                <input type="color" id="scheduleColor" value="#3498db">
+            </div>
+            <div class="repeat-settings">
+                <label>繰り返し</label>
+                <select id="repeatPattern" class="input-field">
+                    <option value="none">なし</option>
+                    <option value="monthly">毎月</option>
+                    <option value="bimonthly">2ヶ月おき</option>
+                    <option value="quarterly">3ヶ月おき</option>
+                    <option value="semiannual">半年おき</option>
+                </select>
+            </div>
+            <div id="repeatCountContainer" style="display: none;">
+                <label>繰り返し回数</label>
+                <input type="number" id="repeatCount" class="input-field" min="1" max="24" value="6" placeholder="繰り返し回数">
+                <small style="color: #6c757d; font-size: 12px;">最初のスケジュールを含めて何回繰り返すか</small>
+            </div>
+            <div class="modal-actions">
+                <button id="saveScheduleBtn" class="btn btn-primary">保存</button>
+                <button id="cancelScheduleBtn" class="btn btn-secondary">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// データ管理
+let currentView = 'year'; // 'year' or 'month'
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth(); // 0-11
+let items = [];
+let schedules = [];
+let editingElement = null;
+let draggedItemIndex = null;
+
+// 日本の祝日（2025年）
+const holidays = {
+    2025: [
+        '2025-01-01', // 元日
+        '2025-01-13', // 成人の日
+        '2025-02-11', // 建国記念の日
+        '2025-02-23', // 天皇誕生日
+        '2025-02-24', // 振替休日
+        '2025-03-20', // 春分の日
+        '2025-04-29', // 昭和の日
+        '2025-05-03', // 憲法記念日
+        '2025-05-04', // みどりの日
+        '2025-05-05', // こどもの日
+        '2025-05-06', // 振替休日
+        '2025-07-21', // 海の日
+        '2025-08-11', // 山の日
+        '2025-09-15', // 敬老の日
+        '2025-09-23', // 秋分の日
+        '2025-10-13', // スポーツの日
+        '2025-11-03', // 文化の日
+        '2025-11-23', // 勤労感謝の日
+        '2025-11-24', // 振替休日
+    ],
+    2026: [
+        '2026-01-01', // 元日
+        '2026-01-12', // 成人の日
+        '2026-02-11', // 建国記念の日
+        '2026-02-23', // 天皇誕生日
+        '2026-03-20', // 春分の日
+        '2026-04-29', // 昭和の日
+        '2026-05-03', // 憲法記念日
+        '2026-05-04', // みどりの日
+        '2026-05-05', // こどもの日
+        '2026-05-06', // 振替休日
+        '2026-07-20', // 海の日
+        '2026-08-11', // 山の日
+        '2026-09-21', // 敬老の日
+        '2026-09-22', // 秋分の日
+        '2026-10-12', // スポーツの日
+        '2026-11-03', // 文化の日
+        '2026-11-23', // 勤労感謝の日
+    ]
+};
+
+// 祝日チェック
+function isHoliday(year, month, day) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return holidays[year] && holidays[year].includes(dateStr);
+}
+
+// DOM要素
+const yearSelector = document.querySelector('.year-selector');
+const monthSelector = document.querySelector('.month-selector');
+const currentYearEl = document.getElementById('currentYear');
+const currentMonthEl = document.getElementById('currentMonth');
+const itemsList = document.getElementById('itemsList');
+const timelineHeader = document.getElementById('timelineHeader');
+const timelineBody = document.getElementById('timelineBody');
+
+// モーダル
+const itemModal = document.getElementById('itemModal');
+const scheduleModal = document.getElementById('scheduleModal');
+
+// 初期化
+document.addEventListener('DOMContentLoaded', () => {
+    loadData();
+    setupEventListeners();
+    render();
+});
+
+// 保存ボタンのイベントリスナーをリセット
+function resetSaveScheduleButton() {
+    const saveBtn = document.getElementById('saveScheduleBtn');
+    const newSaveBtn = saveBtn.cloneNode(true);
+    saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+    
+    newSaveBtn.addEventListener('click', () => {
+        const itemId = parseInt(document.getElementById('scheduleItem').value);
+        const title = document.getElementById('scheduleTitle').value.trim();
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const color = document.getElementById('scheduleColor').value;
+        const repeatPattern = document.getElementById('repeatPattern').value;
+        const repeatCount = parseInt(document.getElementById('repeatCount').value) || 1;
+
+        if (itemId && title && startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const duration = end - start; // 期間（ミリ秒）
+            
+            if (repeatPattern === 'none') {
+                // 繰り返しなし
+                schedules.push({
+                    id: Date.now(),
+                    itemId: itemId,
+                    title: title,
+                    startDate: start,
+                    endDate: end,
+                    color: color,
+                    repeatGroupId: null
+                });
+            } else {
+                // 繰り返しあり
+                const repeatGroupId = Date.now();
+                const monthsIncrement = getMonthsIncrement(repeatPattern);
+                
+                for (let i = 0; i < repeatCount; i++) {
+                    const newStart = new Date(start);
+                    newStart.setMonth(newStart.getMonth() + (monthsIncrement * i));
+                    
+                    const newEnd = new Date(newStart.getTime() + duration);
+                    
+                    schedules.push({
+                        id: Date.now() + i + Math.random(),
+                        itemId: itemId,
+                        title: title,
+                        startDate: newStart,
+                        endDate: newEnd,
+                        color: color,
+                        repeatGroupId: repeatGroupId,
+                        repeatPattern: repeatPattern,
+                        repeatIndex: i,
+                        repeatTotal: repeatCount
+                    });
+                }
+            }
+            
+            saveData();
+            scheduleModal.classList.remove('active');
+            render();
+        } else {
+            alert('すべてのフィールドを入力してください');
+        }
+    });
+}
+
+// イベントリスナー設定
+function setupEventListeners() {
+    // ビュー切り替え
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentView = btn.dataset.view;
+            
+            if (currentView === 'year') {
+                yearSelector.style.display = 'flex';
+                monthSelector.style.display = 'none';
+            } else {
+                yearSelector.style.display = 'none';
+                monthSelector.style.display = 'flex';
+            }
+            
+            render();
+        });
+    });
+
+    // 年切り替え
+    document.getElementById('prevYear').addEventListener('click', () => {
+        currentYear--;
+        render();
+    });
+
+    document.getElementById('nextYear').addEventListener('click', () => {
+        currentYear++;
+        render();
+    });
+
+    // 月切り替え
+    document.getElementById('prevMonth').addEventListener('click', () => {
+        currentMonth--;
+        if (currentMonth < 0) {
+            currentMonth = 11;
+            currentYear--;
+        }
+        render();
+    });
+
+    document.getElementById('nextMonth').addEventListener('click', () => {
+        currentMonth++;
+        if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+        }
+        render();
+    });
+
+    // 項目追加
+    document.getElementById('addItemBtn').addEventListener('click', () => {
+        itemModal.classList.add('active');
+        document.getElementById('itemName').value = '';
+    });
+
+    document.getElementById('saveItemBtn').addEventListener('click', () => {
+        const name = document.getElementById('itemName').value.trim();
+        if (name) {
+            items.push({
+                id: Date.now(),
+                name: name
+            });
+            saveData();
+            itemModal.classList.remove('active');
+            render();
+        }
+    });
+
+    document.getElementById('cancelItemBtn').addEventListener('click', () => {
+        itemModal.classList.remove('active');
+    });
+
+    // 繰り返しパターン変更時の処理
+    document.getElementById('repeatPattern').addEventListener('change', (e) => {
+        const repeatCountContainer = document.getElementById('repeatCountContainer');
+        if (e.target.value !== 'none') {
+            repeatCountContainer.style.display = 'block';
+        } else {
+            repeatCountContainer.style.display = 'none';
+        }
+    });
+
+    // スケジュール追加
+    document.getElementById('addScheduleBtn').addEventListener('click', () => {
+        if (items.length === 0) {
+            alert('まず項目を追加してください');
+            return;
+        }
+        
+        const select = document.getElementById('scheduleItem');
+        select.innerHTML = '<option value="">項目を選択</option>';
+        items.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item.name;
+            select.appendChild(option);
+        });
+        
+        scheduleModal.classList.add('active');
+        document.getElementById('scheduleTitle').value = '';
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        document.getElementById('scheduleColor').value = '#3498db';
+        document.getElementById('repeatPattern').value = 'none';
+        document.getElementById('repeatPattern').disabled = false; // 有効化
+        document.getElementById('repeatCount').value = '6';
+        document.getElementById('repeatCountContainer').style.display = 'none';
+    });
+
+    // 保存ボタンのイベントリスナーを設定
+    resetSaveScheduleButton();
+
+    document.getElementById('cancelScheduleBtn').addEventListener('click', () => {
+        scheduleModal.classList.remove('active');
+        // 繰り返しパターン選択を有効化（編集後に無効化されている場合があるため）
+        document.getElementById('repeatPattern').disabled = false;
+    });
+
+    // CSV インポート
+    document.getElementById('importBtn').addEventListener('click', () => {
+        document.getElementById('csvFileInput').click();
+    });
+
+    document.getElementById('csvFileInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            importFromCSV(file);
+        }
+    });
+
+    // CSV エクスポート
+    document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+
+    // モーダル外クリックで閉じる
+    [itemModal, scheduleModal].forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+                // スケジュールモーダルの場合は繰り返しパターン選択を有効化
+                if (modal === scheduleModal) {
+                    document.getElementById('repeatPattern').disabled = false;
+                }
+            }
+        });
+    });
+}
+
+// CSV インポート
+function importFromCSV(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const text = e.target.result;
+            const lines = text.split('\n');
+            
+            // ヘッダー行をスキップ
+            const dataLines = lines.slice(1).filter(line => line.trim());
+            
+            const newSchedules = [];
+            const itemMap = new Map();
+            
+            dataLines.forEach(line => {
+                // CSV解析（簡易版）
+                const match = line.match(/"([^"]*)","([^"]*)","([^"]*)","([^"]*)","([^"]*)"/);
+                if (match) {
+                    const [, itemName, title, startDateStr, endDateStr, color] = match;
+                    
+                    // 項目の取得または作成
+                    let itemId;
+                    if (itemMap.has(itemName)) {
+                        itemId = itemMap.get(itemName);
+                    } else {
+                        const existingItem = items.find(i => i.name === itemName);
+                        if (existingItem) {
+                            itemId = existingItem.id;
+                        } else {
+                            itemId = Date.now() + Math.random();
+                            items.push({
+                                id: itemId,
+                                name: itemName
+                            });
+                        }
+                        itemMap.set(itemName, itemId);
+                    }
+                    
+                    // 日付の解析
+                    const startDate = new Date(startDateStr.replace(/\//g, '-'));
+                    const endDate = new Date(endDateStr.replace(/\//g, '-'));
+                    
+                    if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+                        newSchedules.push({
+                            id: Date.now() + Math.random(),
+                            itemId: itemId,
+                            title: title,
+                            startDate: startDate,
+                            endDate: endDate,
+                            color: color || '#3498db'
+                        });
+                    }
+                }
+            });
+            
+            if (newSchedules.length > 0) {
+                schedules.push(...newSchedules);
+                saveData();
+                render();
+                alert(`${newSchedules.length}件のスケジュールをインポートしました`);
+            } else {
+                alert('インポートできるデータが見つかりませんでした');
+            }
+            
+        } catch (error) {
+            alert('CSVファイルの読み込みに失敗しました: ' + error.message);
+        }
+        
+        // ファイル入力をリセット
+        document.getElementById('csvFileInput').value = '';
+    };
+    
+    reader.readAsText(file, 'UTF-8');
+}
+
+// CSV エクスポート
+function exportToCSV() {
+    let csv = '\uFEFF'; // BOM for Excel
+    csv += '項目,スケジュール名,開始日,終了日,カラー\n';
+    
+    schedules.forEach(schedule => {
+        const item = items.find(i => i.id === schedule.itemId);
+        const itemName = item ? item.name : '';
+        const startDate = formatDate(schedule.startDate);
+        const endDate = formatDate(schedule.endDate);
+        
+        csv += `"${itemName}","${schedule.title}","${startDate}","${endDate}","${schedule.color}"\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `schedule_${currentYear}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// 日付フォーマット
+function formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}/${month}/${day}`;
+}
+
+// 月表示更新
+function updateMonthDisplay() {
+    const monthNames = ['１月', '２月', '３月', '４月', '５月', '６月', '７月', '８月', '９月', '１０月', '１１月', '１２月'];
+    currentMonthEl.textContent = `${toFullWidth(currentYear)}年${monthNames[currentMonth]}`;
+    currentYearEl.textContent = toFullWidth(currentYear);
+}
+
+// レンダリング
+function render() {
+    // 年・月の表示を更新
+    currentYearEl.textContent = toFullWidth(currentYear);
+    updateMonthDisplay();
+    
+    renderItems();
+    renderTimeline();
+}
+
+// 項目レンダリング
+function renderItems() {
+    itemsList.innerHTML = '';
+    items.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'item-row';
+        div.draggable = true;
+        div.dataset.index = index;
+        
+        // ドラッグイベント
+        div.addEventListener('dragstart', (e) => {
+            draggedItemIndex = index;
+            div.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        
+        div.addEventListener('dragend', (e) => {
+            div.classList.remove('dragging');
+            draggedItemIndex = null;
+            // すべての項目から drag-over クラスを削除
+            document.querySelectorAll('.item-row').forEach(row => {
+                row.classList.remove('drag-over');
+            });
+        });
+        
+        div.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (draggedItemIndex !== null && draggedItemIndex !== index) {
+                div.classList.add('drag-over');
+            }
+        });
+        
+        div.addEventListener('dragleave', (e) => {
+            div.classList.remove('drag-over');
+        });
+        
+        div.addEventListener('drop', (e) => {
+            e.preventDefault();
+            div.classList.remove('drag-over');
+            if (draggedItemIndex !== null && draggedItemIndex !== index) {
+                // 項目を移動
+                const draggedItem = items[draggedItemIndex];
+                items.splice(draggedItemIndex, 1);
+                const newIndex = draggedItemIndex < index ? index - 1 : index;
+                items.splice(newIndex, 0, draggedItem);
+                saveData();
+                render();
+            }
+        });
+        
+        // 項目名（ダブルクリックで編集）
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'item-name';
+        nameSpan.textContent = item.name;
+        nameSpan.ondblclick = () => editItemName(item.id, nameSpan);
+        
+        // 削除ボタン
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'item-delete-btn';
+        deleteBtn.textContent = '×';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteItem(item.id);
+        };
+        
+        div.appendChild(nameSpan);
+        div.appendChild(deleteBtn);
+        itemsList.appendChild(div);
+    });
+}
+
+// 半角数字を全角に変換
+function toFullWidth(str) {
+    return str.toString().replace(/[0-9]/g, (s) => {
+        return String.fromCharCode(s.charCodeAt(0) + 0xFEE0);
+    });
+}
+
+// 曜日取得（全角）
+function getWeekdayJa(date) {
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+    return weekdays[date.getDay()];
+}
+
+// 繰り返しパターンから月数を取得
+function getMonthsIncrement(pattern) {
+    switch(pattern) {
+        case 'monthly': return 1;
+        case 'bimonthly': return 2;
+        case 'quarterly': return 3;
+        case 'semiannual': return 6;
+        default: return 0;
+    }
+}
+
+// 繰り返しパターンの表示名
+function getRepeatPatternName(pattern) {
+    switch(pattern) {
+        case 'monthly': return '毎月';
+        case 'bimonthly': return '2ヶ月おき';
+        case 'quarterly': return '3ヶ月おき';
+        case 'semiannual': return '半年おき';
+        default: return '';
+    }
+}
+
+// 項目削除
+function deleteItem(itemId) {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+    
+    const relatedSchedules = schedules.filter(s => s.itemId === itemId);
+    let message = `「${item.name}」を削除しますか？`;
+    if (relatedSchedules.length > 0) {
+        message += `\n\nこの項目に関連する${relatedSchedules.length}件のスケジュールも削除されます。`;
+    }
+    
+    if (confirm(message)) {
+        items = items.filter(i => i.id !== itemId);
+        schedules = schedules.filter(s => s.itemId !== itemId);
+        saveData();
+        render();
+    }
+}
+
+// 項目名編集
+function editItemName(itemId, element) {
+    if (editingElement) return;
+    
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+    
+    editingElement = element;
+    const originalText = element.textContent;
+    
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = originalText;
+    input.className = 'input-field';
+    input.style.width = '100%';
+    input.style.margin = '0';
+    
+    element.textContent = '';
+    element.appendChild(input);
+    input.focus();
+    input.select();
+    
+    const save = () => {
+        const newValue = input.value.trim();
+        if (newValue && newValue !== originalText) {
+            item.name = newValue;
+            saveData();
+        }
+        element.textContent = item.name;
+        editingElement = null;
+    };
+    
+    input.onblur = save;
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+            save();
+        } else if (e.key === 'Escape') {
+            element.textContent = originalText;
+            editingElement = null;
+        }
+    };
+}
+
+// タイムラインレンダリング
+function renderTimeline() {
+    if (currentView === 'year') {
+        renderYearTimeline();
+    } else {
+        renderMonthTimeline();
+    }
+}
+
+// 年間タイムライン
+function renderYearTimeline() {
+    const months = ['１月', '２月', '３月', '４月', '５月', '６月', '７月', '８月', '９月', '１０月', '１１月', '１２月'];
+    
+    // ヘッダー
+    timelineHeader.innerHTML = '';
+    months.forEach((month, index) => {
+        const cell = document.createElement('div');
+        cell.className = 'timeline-cell month-header';
+        cell.textContent = month;
+        timelineHeader.appendChild(cell);
+    });
+
+    // ボディ
+    timelineBody.innerHTML = '';
+    items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'timeline-row';
+        
+        // グリッド背景
+        for (let i = 0; i < 12; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'timeline-grid-cell';
+            cell.style.minWidth = '90px';
+            row.appendChild(cell);
+        }
+
+        // スケジュールバー
+        const itemSchedules = schedules.filter(s => s.itemId === item.id);
+        itemSchedules.forEach(schedule => {
+            if (schedule.startDate.getFullYear() === currentYear || schedule.endDate.getFullYear() === currentYear) {
+                const bar = createScheduleBar(schedule, 'year');
+                if (bar) {
+                    row.appendChild(bar);
+                }
+            }
+        });
+
+        timelineBody.appendChild(row);
+    });
+}
+
+// 月間タイムライン
+function renderMonthTimeline() {
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    
+    // ヘッダー
+    timelineHeader.innerHTML = '';
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(currentYear, currentMonth, day);
+        const dayOfWeek = date.getDay(); // 0: 日曜, 6: 土曜
+        
+        const cell = document.createElement('div');
+        cell.className = 'timeline-cell';
+        // 全角の日付 + 半角カッコで曜日
+        cell.textContent = `${toFullWidth(day)}(${getWeekdayJa(date)})`;
+        
+        // 土日祝日の色適用
+        if (isHoliday(currentYear, currentMonth, day)) {
+            cell.classList.add('holiday');
+        } else if (dayOfWeek === 0) {
+            cell.classList.add('sunday');
+        } else if (dayOfWeek === 6) {
+            cell.classList.add('saturday');
+        }
+        
+        timelineHeader.appendChild(cell);
+    }
+
+    // ボディ
+    timelineBody.innerHTML = '';
+    items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'timeline-row';
+        
+        // グリッド背景
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(currentYear, currentMonth, day);
+            const dayOfWeek = date.getDay();
+            
+            const cell = document.createElement('div');
+            cell.className = 'timeline-grid-cell';
+            
+            // 土日祝日の色適用
+            if (isHoliday(currentYear, currentMonth, day)) {
+                cell.classList.add('holiday');
+            } else if (dayOfWeek === 0) {
+                cell.classList.add('sunday');
+            } else if (dayOfWeek === 6) {
+                cell.classList.add('saturday');
+            }
+            
+            row.appendChild(cell);
+        }
+
+        // スケジュールバー
+        const itemSchedules = schedules.filter(s => s.itemId === item.id);
+        itemSchedules.forEach(schedule => {
+            if ((schedule.startDate.getFullYear() === currentYear && schedule.startDate.getMonth() === currentMonth) ||
+                (schedule.endDate.getFullYear() === currentYear && schedule.endDate.getMonth() === currentMonth) ||
+                (schedule.startDate < new Date(currentYear, currentMonth, 1) && schedule.endDate > new Date(currentYear, currentMonth + 1, 0))) {
+                const bar = createScheduleBar(schedule, 'month');
+                if (bar) {
+                    row.appendChild(bar);
+                }
+            }
+        });
+
+        timelineBody.appendChild(row);
+    });
+}
+
+// スケジュールバー作成
+function createScheduleBar(schedule, view) {
+    const bar = document.createElement('div');
+    bar.className = 'schedule-bar';
+    bar.textContent = schedule.title;
+    bar.style.backgroundColor = schedule.color;
+    bar.dataset.scheduleId = schedule.id;
+
+    if (view === 'year') {
+        const startMonth = schedule.startDate.getMonth();
+        const endMonth = schedule.endDate.getMonth();
+        const startYear = schedule.startDate.getFullYear();
+        const endYear = schedule.endDate.getFullYear();
+
+        let left, width;
+        
+        if (startYear === currentYear && endYear === currentYear) {
+            left = startMonth * 90;
+            width = (endMonth - startMonth + 1) * 90;
+        } else if (startYear < currentYear && endYear === currentYear) {
+            left = 0;
+            width = (endMonth + 1) * 90;
+        } else if (startYear === currentYear && endYear > currentYear) {
+            left = startMonth * 90;
+            width = (12 - startMonth) * 90;
+        } else if (startYear < currentYear && endYear > currentYear) {
+            left = 0;
+            width = 1080;
+        } else {
+            return null;
+        }
+
+        bar.style.left = `${left}px`;
+        bar.style.width = `${width - 10}px`;
+    } else {
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const startDay = schedule.startDate.getDate();
+        const endDay = schedule.endDate.getDate();
+        const startMonth = schedule.startDate.getMonth();
+        const endMonth = schedule.endDate.getMonth();
+        const startYear = schedule.startDate.getFullYear();
+        const endYear = schedule.endDate.getFullYear();
+
+        let left, width;
+
+        if (startYear === currentYear && startMonth === currentMonth && endYear === currentYear && endMonth === currentMonth) {
+            left = (startDay - 1) * 80;
+            width = (endDay - startDay + 1) * 80;
+        } else if ((startYear < currentYear || (startYear === currentYear && startMonth < currentMonth)) && endYear === currentYear && endMonth === currentMonth) {
+            left = 0;
+            width = endDay * 80;
+        } else if (startYear === currentYear && startMonth === currentMonth && (endYear > currentYear || (endYear === currentYear && endMonth > currentMonth))) {
+            left = (startDay - 1) * 80;
+            width = (daysInMonth - startDay + 1) * 80;
+        } else if ((startYear < currentYear || (startYear === currentYear && startMonth < currentMonth)) && (endYear > currentYear || (endYear === currentYear && endMonth > currentMonth))) {
+            left = 0;
+            width = daysInMonth * 80;
+        } else {
+            return null;
+        }
+
+        bar.style.left = `${left}px`;
+        bar.style.width = `${width - 10}px`;
+    }
+
+    // 繰り返しアイコン
+    if (schedule.repeatGroupId) {
+        const repeatIcon = document.createElement('span');
+        repeatIcon.className = 'schedule-repeat-icon';
+        repeatIcon.textContent = '🔄';
+        repeatIcon.title = `${getRepeatPatternName(schedule.repeatPattern)} (${schedule.repeatIndex + 1}/${schedule.repeatTotal})`;
+        bar.appendChild(repeatIcon);
+    }
+    
+    // 削除ボタン
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'schedule-delete-btn';
+    deleteBtn.textContent = '×';
+    deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        deleteSchedule(schedule.id, schedule.repeatGroupId);
+    };
+    bar.appendChild(deleteBtn);
+    
+    // ツールチップ表示
+    let tooltipText = `${schedule.title}\n${formatDate(schedule.startDate)} ～ ${formatDate(schedule.endDate)}`;
+    if (schedule.repeatGroupId) {
+        tooltipText += `\n繰り返し: ${getRepeatPatternName(schedule.repeatPattern)} (${schedule.repeatIndex + 1}/${schedule.repeatTotal})`;
+    }
+    bar.title = tooltipText;
+    
+    // ダブルクリックで編集
+    bar.ondblclick = (e) => {
+        e.stopPropagation();
+        editSchedule(schedule.id);
+    };
+
+    return bar;
+}
+
+// スケジュール削除
+function deleteSchedule(scheduleId, repeatGroupId) {
+    const schedule = schedules.find(s => s.id === scheduleId);
+    if (!schedule) return;
+    
+    if (repeatGroupId) {
+        // 繰り返しグループの場合
+        const groupSchedules = schedules.filter(s => s.repeatGroupId === repeatGroupId);
+        const message = `このスケジュールは繰り返し設定されています。\n\n【削除オプション】\n1. このスケジュールのみ削除\n2. 繰り返しグループ全体（${groupSchedules.length}件）を削除\n\n「OK」で全体削除、「キャンセル」で個別削除を選択してください。`;
+        
+        if (confirm(message)) {
+            // 全体削除
+            schedules = schedules.filter(s => s.repeatGroupId !== repeatGroupId);
+        } else {
+            // 個別削除の確認
+            if (confirm(`「${schedule.title}」(${schedule.repeatIndex + 1}/${schedule.repeatTotal})を削除しますか？`)) {
+                schedules = schedules.filter(s => s.id !== scheduleId);
+            } else {
+                return;
+            }
+        }
+    } else {
+        // 通常のスケジュール
+        if (!confirm(`スケジュール「${schedule.title}」を削除しますか？`)) {
+            return;
+        }
+        schedules = schedules.filter(s => s.id !== scheduleId);
+    }
+    
+    saveData();
+    render();
+}
+
+// スケジュール編集
+function editSchedule(scheduleId) {
+    const schedule = schedules.find(s => s.id === scheduleId);
+    if (!schedule) return;
+    
+    // 繰り返しスケジュールの場合は警告
+    if (schedule.repeatGroupId) {
+        const message = `このスケジュールは繰り返し設定されています。\n\n編集すると元の繰り返しグループから切り離され、\n新たに繰り返し設定を適用できます。\n\n続けますか？`;
+        if (!confirm(message)) {
+            return;
+        }
+    }
+    
+    // モーダルに値を設定
+    const select = document.getElementById('scheduleItem');
+    select.innerHTML = '<option value="">項目を選択</option>';
+    items.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = item.name;
+        option.selected = item.id === schedule.itemId;
+        select.appendChild(option);
+    });
+    
+    document.getElementById('scheduleTitle').value = schedule.title;
+    document.getElementById('startDate').value = schedule.startDate.toISOString().split('T')[0];
+    document.getElementById('endDate').value = schedule.endDate.toISOString().split('T')[0];
+    document.getElementById('scheduleColor').value = schedule.color;
+    
+    // 繰り返し設定を有効化
+    document.getElementById('repeatPattern').value = 'none';
+    document.getElementById('repeatPattern').disabled = false;
+    document.getElementById('repeatCount').value = '6';
+    document.getElementById('repeatCountContainer').style.display = 'none';
+    
+    scheduleModal.classList.add('active');
+    
+    // 保存ボタンを更新モードに
+    const saveBtn = document.getElementById('saveScheduleBtn');
+    const newSaveBtn = saveBtn.cloneNode(true);
+    saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+    
+    newSaveBtn.onclick = () => {
+        const itemId = parseInt(document.getElementById('scheduleItem').value);
+        const title = document.getElementById('scheduleTitle').value.trim();
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const color = document.getElementById('scheduleColor').value;
+        const repeatPattern = document.getElementById('repeatPattern').value;
+        const repeatCount = parseInt(document.getElementById('repeatCount').value) || 1;
+
+        if (itemId && title && startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const duration = end - start; // 期間（ミリ秒）
+            
+            // 既存のスケジュールを削除
+            schedules = schedules.filter(s => s.id !== scheduleId);
+            
+            if (repeatPattern === 'none') {
+                // 繰り返しなし
+                schedules.push({
+                    id: Date.now(),
+                    itemId: itemId,
+                    title: title,
+                    startDate: start,
+                    endDate: end,
+                    color: color,
+                    repeatGroupId: null
+                });
+            } else {
+                // 繰り返しあり
+                const repeatGroupId = Date.now();
+                const monthsIncrement = getMonthsIncrement(repeatPattern);
+                
+                for (let i = 0; i < repeatCount; i++) {
+                    const newStart = new Date(start);
+                    newStart.setMonth(newStart.getMonth() + (monthsIncrement * i));
+                    
+                    const newEnd = new Date(newStart.getTime() + duration);
+                    
+                    schedules.push({
+                        id: Date.now() + i + Math.random(),
+                        itemId: itemId,
+                        title: title,
+                        startDate: newStart,
+                        endDate: newEnd,
+                        color: color,
+                        repeatGroupId: repeatGroupId,
+                        repeatPattern: repeatPattern,
+                        repeatIndex: i,
+                        repeatTotal: repeatCount
+                    });
+                }
+            }
+            
+            saveData();
+            scheduleModal.classList.remove('active');
+            
+            // 繰り返しパターン選択を有効化
+            document.getElementById('repeatPattern').disabled = false;
+            
+            render();
+            
+            // 保存ボタンを元に戻す
+            resetSaveScheduleButton();
+        } else {
+            alert('すべてのフィールドを入力してください');
+        }
+    };
+}
+
+// データ保存
+function saveData() {
+    localStorage.setItem('scheduleItems', JSON.stringify(items));
+    localStorage.setItem('scheduleData', JSON.stringify(schedules.map(s => ({
+        ...s,
+        startDate: s.startDate.toISOString(),
+        endDate: s.endDate.toISOString(),
+        repeatGroupId: s.repeatGroupId || null,
+        repeatPattern: s.repeatPattern || null,
+        repeatIndex: s.repeatIndex ?? null,
+        repeatTotal: s.repeatTotal ?? null
+    }))));
+}
+
+// データ読み込み
+function loadData() {
+    const savedItems = localStorage.getItem('scheduleItems');
+    const savedSchedules = localStorage.getItem('scheduleData');
+    
+    if (savedItems) {
+        items = JSON.parse(savedItems);
+    } else {
+        // サンプルデータ
+        items = [
+            { id: 1, name: 'プロジェクトA' },
+            { id: 2, name: 'プロジェクトB' },
+            { id: 3, name: 'プロジェクトC' }
+        ];
+    }
+
+    if (savedSchedules) {
+        schedules = JSON.parse(savedSchedules).map(s => ({
+            ...s,
+            startDate: new Date(s.startDate),
+            endDate: new Date(s.endDate),
+            repeatGroupId: s.repeatGroupId || null,
+            repeatPattern: s.repeatPattern || null,
+            repeatIndex: s.repeatIndex ?? null,
+            repeatTotal: s.repeatTotal ?? null
+        }));
+    } else {
+        // サンプルデータ
+        schedules = [
+            { 
+                id: 1, 
+                itemId: 1, 
+                title: '企画フェーズ', 
+                startDate: new Date(2025, 0, 1), 
+                endDate: new Date(2025, 2, 31),
+                color: '#3498db',
+                repeatGroupId: null
+            },
+            { 
+                id: 2, 
+                itemId: 1, 
+                title: '開発フェーズ', 
+                startDate: new Date(2025, 3, 1), 
+                endDate: new Date(2025, 8, 30),
+                color: '#2ecc71',
+                repeatGroupId: null
+            },
+            { 
+                id: 3, 
+                itemId: 2, 
+                title: '要件定義', 
+                startDate: new Date(2025, 1, 1), 
+                endDate: new Date(2025, 3, 30),
+                color: '#e74c3c',
+                repeatGroupId: null
+            },
+            { 
+                id: 4, 
+                itemId: 3, 
+                title: 'テストフェーズ', 
+                startDate: new Date(2025, 9, 1), 
+                endDate: new Date(2025, 11, 31),
+                color: '#f39c12',
+                repeatGroupId: null
+            }
+        ];
+    }
+}
+    </script>
+</body>
+</html>
